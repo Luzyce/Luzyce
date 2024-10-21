@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="Luzyce.Core" Version="10.0.50" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Luzyce.Core\Luzyce.Core.csproj" />
+    <ProjectReference Include="..\Luzyce.Api.Core\Luzyce.Api.Core.csproj" />
+    <ProjectReference Include="..\Luzyce.Api.Domain\Luzyce.Api.Domain.csproj" />
+    <ProjectReference Include="..\Luzyce.Api.Db.AppDb\Luzyce.Api.Db.AppDb.csproj" />
+    <ProjectReference Include="..\Luzyce.Api.Db.Subiekt\Luzyce.Api.Db.Subiekt.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+</Project>

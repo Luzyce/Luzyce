@@ -1,0 +1,6 @@
+@LuzyceApi_HostAddress = http://localhost:5132
+
+GET {{LuzyceApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
