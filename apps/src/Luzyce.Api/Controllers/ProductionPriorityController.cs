@@ -8,10 +8,10 @@ namespace Luzyce.Api.Controllers;
 
 [ApiController]
 [Route("api/productionPriority")]
-public class ProductionPriorityController(ProductionPriorityRepository productionPriorityRepository, LogRepository logRepository) : Controller
+public class ProductionPriorityController(ProductionPriorityRepository productionPriorityRepository, EventRepository eventRepository) : Controller
 {
     private readonly ProductionPriorityRepository productionPriorityRepository = productionPriorityRepository;
-    private readonly LogRepository logRepository = logRepository;
+    private readonly EventRepository _eventRepository = eventRepository;
     
     [HttpPost("updatePriorities")]
     [Authorize]
@@ -21,11 +21,11 @@ public class ProductionPriorityController(ProductionPriorityRepository productio
         
         if (status == 0)
         {
-            logRepository.AddLog(User, "Nie udało się zaktualizować priorytetów - wystąpił błąd podczas aktualizacji", JsonSerializer.Serialize(updateProductionPrioritiesRequest));
+            _eventRepository.AddLog(User, "Nie udało się zaktualizować priorytetów - wystąpił błąd podczas aktualizacji", JsonSerializer.Serialize(updateProductionPrioritiesRequest));
             return Conflict();
         }
 
-        logRepository.AddLog(User, "Zaktualizowano priorytety", JsonSerializer.Serialize(updateProductionPrioritiesRequest));
+        _eventRepository.AddLog(User, "Zaktualizowano priorytety", JsonSerializer.Serialize(updateProductionPrioritiesRequest));
 
         return Ok();
     }

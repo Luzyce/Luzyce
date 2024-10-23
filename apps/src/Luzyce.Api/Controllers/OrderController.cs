@@ -9,16 +9,16 @@ namespace Luzyce.Api.Controllers;
 
 [ApiController]
 [Route("api/order")]
-public class OrderController(OrderRepository orderRepository, LogRepository logRepository) : Controller
+public class OrderController(OrderRepository orderRepository, EventRepository eventRepository) : Controller
 {
     private readonly OrderRepository orderRepository = orderRepository;
-    private readonly LogRepository logRepository = logRepository;
+    private readonly EventRepository _eventRepository = eventRepository;
 
     [HttpPost("{offset}")]
     [Authorize]
     public IActionResult Get(int offset, GetOrdersDto getOrdersDto)
     {
-        logRepository.AddLog(User, "Pobrano zamówienia z Subiekta", JsonSerializer.Serialize(new {offset, getOrdersDto}));
+        _eventRepository.AddLog(User, "Pobrano zamówienia z Subiekta", JsonSerializer.Serialize(new {offset, getOrdersDto}));
         var response = orderRepository.GetOrders(offset: offset, ordersFilters: getOrdersDto.ToOrdersFiltersFromDto());
         return Ok(new GetOrdersResponseDto
         {
@@ -63,7 +63,7 @@ public class OrderController(OrderRepository orderRepository, LogRepository logR
     [Authorize]
     public IActionResult Get(int offset, int limit)
     {
-        logRepository.AddLog(User, "Pobrano zamówienia z Subiekta", JsonSerializer.Serialize(new {offset, limit}));
+        _eventRepository.AddLog(User, "Pobrano zamówienia z Subiekta", JsonSerializer.Serialize(new {offset, limit}));
         return Ok(orderRepository.GetOrders(offset: offset, limit: limit));
     }
 
@@ -71,7 +71,7 @@ public class OrderController(OrderRepository orderRepository, LogRepository logR
     [Authorize]
     public IActionResult GetPositions(int orderId)
     {
-        logRepository.AddLog(User, "Pobrano pozycje zamówienia z Subiekta", JsonSerializer.Serialize(orderId));
+        _eventRepository.AddLog(User, "Pobrano pozycje zamówienia z Subiekta", JsonSerializer.Serialize(orderId));
         return Ok(orderRepository.GetOrderPositions(orderId));
     }
     
@@ -79,7 +79,7 @@ public class OrderController(OrderRepository orderRepository, LogRepository logR
     [Authorize]
     public IActionResult GetWarehousesLevels(StockRequest stockRequest)
     {
-        logRepository.AddLog(User, "Pobrano stany magazynowe", JsonSerializer.Serialize(stockRequest));
+        _eventRepository.AddLog(User, "Pobrano stany magazynowe", JsonSerializer.Serialize(stockRequest));
         var response = orderRepository.GetWarehousesLevels(stockRequest);
         return Ok(response);
     }

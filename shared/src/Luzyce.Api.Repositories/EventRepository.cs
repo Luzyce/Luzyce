@@ -1,14 +1,14 @@
 ﻿using System.Security.Claims;
 using Luzyce.Api.Core.Dictionaries;
-using Luzyce.Shared.Models.Log;
 using Luzyce.Shared.Models.User;
 using Luzyce.Api.Db.AppDb.Data;
 using Luzyce.Api.Db.AppDb.Models;
+using Luzyce.Shared.Models.Event;
 using Microsoft.EntityFrameworkCore;
 
 namespace Luzyce.Api.Repositories;
 
-public class LogRepository(ApplicationDbContext applicationDbContext)
+public class EventRepository(ApplicationDbContext applicationDbContext)
 {
     private readonly ApplicationDbContext applicationDbContext = applicationDbContext;
 
@@ -58,17 +58,17 @@ public class LogRepository(ApplicationDbContext applicationDbContext)
     }
 
 
-    public GetLogs GetLogs(int offset, int limit)
+    public GetEvents GetLogs(int offset, int limit)
     {
-        return new GetLogs
+        return new GetEvents
         {
-            Logs = applicationDbContext.Logs
+            Events = applicationDbContext.Logs
                 .Include(x => x.User)
                 .Include(x => x.Client)
                 .OrderByDescending(x => x.Timestamp)
                 .Skip((offset - 1) * limit)
                 .Take(limit)
-                .Select(x => new GetLog
+                .Select(x => new GetEvent
                 {
                     Id = x.Id,
                     Timestamp = x.Timestamp,
@@ -97,17 +97,17 @@ public class LogRepository(ApplicationDbContext applicationDbContext)
         };
     }
 
-    public GetLogs GetUnidentifiedLogs(int offset, int limit)
+    public GetEvents GetUnidentifiedLogs(int offset, int limit)
     {
-        return new GetLogs
+        return new GetEvents
         {
-            Logs = applicationDbContext.Logs
+            Events = applicationDbContext.Logs
                 .Include(x => x.Client)
                 .Where(x => x.UserId == null && x.ClientId != null && x.Hash != null)
                 .OrderByDescending(x => x.Timestamp)
                 .Skip((offset - 1) * limit)
                 .Take(limit)
-                .Select(x => new GetLog
+                .Select(x => new GetEvent
                 {
                     Id = x.Id,
                     Timestamp = x.Timestamp,

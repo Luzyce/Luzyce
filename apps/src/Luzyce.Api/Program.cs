@@ -75,7 +75,7 @@ builder.Services.AddScoped<Luzyce.Api.Repositories.ProductionOrderRepository>();
 builder.Services.AddScoped<Luzyce.Api.Repositories.LampshadeRepository>();
 builder.Services.AddScoped<Luzyce.Api.Repositories.ProductionPriorityRepository>();
 builder.Services.AddScoped<Luzyce.Api.Repositories.ProductionPlanRepository>();
-builder.Services.AddScoped<Luzyce.Api.Repositories.LogRepository>();
+builder.Services.AddScoped<Luzyce.Api.Repositories.EventRepository>();
 builder.Services.AddScoped<Luzyce.Api.Repositories.DocumentDependencyChartRepository>();
 
 builder.Services.AddDbContext<ApplicationDbContext>();

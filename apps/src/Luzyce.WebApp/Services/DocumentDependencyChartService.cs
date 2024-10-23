@@ -1,5 +1,5 @@
 ﻿using System.Net.Http.Json;
-using Luzyce.Core.Models.DocumentDependencyChart;
+using Luzyce.Shared.Models.DocumentDependencyChart;
 
 namespace Luzyce.WebApp.Services;
 

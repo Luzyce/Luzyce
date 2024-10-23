@@ -10,16 +10,16 @@ namespace Luzyce.Api.Controllers;
 
 [ApiController]
 [Route("api/productionOrder")]
-public class ProductionOrderController(ProductionOrderRepository productionOrderRepository, LogRepository logRepository) : Controller
+public class ProductionOrderController(ProductionOrderRepository productionOrderRepository, EventRepository eventRepository) : Controller
 {
     private readonly ProductionOrderRepository productionOrderRepository = productionOrderRepository;
-    private readonly LogRepository logRepository = logRepository;
+    private readonly EventRepository _eventRepository = eventRepository;
     
     [HttpGet]
     [Authorize]
     public IActionResult Get()
     {
-        logRepository.AddLog(User, "Pobrano zlecenia produkcji", null);
+        _eventRepository.AddLog(User, "Pobrano zlecenia produkcji", null);
         return Ok(productionOrderRepository.GetProductionOrders());
     }
     
@@ -27,7 +27,7 @@ public class ProductionOrderController(ProductionOrderRepository productionOrder
     [Authorize]
     public IActionResult Get(int id)
     {
-        logRepository.AddLog(User, "Pobrano zlecenie produkcji", JsonSerializer.Serialize(new {id}));
+        _eventRepository.AddLog(User, "Pobrano zlecenie produkcji", JsonSerializer.Serialize(new {id}));
         return Ok(productionOrderRepository.GetProductionOrder(id));
     }
     
@@ -35,7 +35,7 @@ public class ProductionOrderController(ProductionOrderRepository productionOrder
     [Authorize]
     public IActionResult GetPositions()
     {
-        logRepository.AddLog(User, "Pobrano pozycje zlecenia produkcji", null);
+        _eventRepository.AddLog(User, "Pobrano pozycje zlecenia produkcji", null);
         return Ok(productionOrderRepository.GetPositions());
     }
     
@@ -47,7 +47,7 @@ public class ProductionOrderController(ProductionOrderRepository productionOrder
         
         if (operatorId == 0)
         {
-            logRepository.AddLog(User, "Nie udało się utworzyć zlecenia produkcyjnego – nieautoryzowany użytkownik", JsonSerializer.Serialize(createProductionOrderDto));
+            _eventRepository.AddLog(User, "Nie udało się utworzyć zlecenia produkcyjnego – nieautoryzowany użytkownik", JsonSerializer.Serialize(createProductionOrderDto));
             return Unauthorized();
         }
         
@@ -60,11 +60,11 @@ public class ProductionOrderController(ProductionOrderRepository productionOrder
         
         if (status == null)
         {
-            logRepository.AddLog(User, "Nie udało się utworzyć zlecenia produkcyjnego - wystąpił błąd podczas zapisu", JsonSerializer.Serialize(createProductionOrderDto));
+            _eventRepository.AddLog(User, "Nie udało się utworzyć zlecenia produkcyjnego - wystąpił błąd podczas zapisu", JsonSerializer.Serialize(createProductionOrderDto));
             return Conflict();
         }
 
-        logRepository.AddLog(User, "Utworzono zlecenie produkcji", JsonSerializer.Serialize(createProductionOrderDto));
+        _eventRepository.AddLog(User, "Utworzono zlecenie produkcji", JsonSerializer.Serialize(createProductionOrderDto));
 
         return Ok(status);
     }
@@ -77,11 +77,11 @@ public class ProductionOrderController(ProductionOrderRepository productionOrder
         
         if (resp == 0)
         {
-            logRepository.AddLog(User, "Nie udało się zaktualizować zlecenia produkcyjnego", JsonSerializer.Serialize(updateProductionOrderDto));
+            _eventRepository.AddLog(User, "Nie udało się zaktualizować zlecenia produkcyjnego", JsonSerializer.Serialize(updateProductionOrderDto));
             return Conflict();
         }
 
-        logRepository.AddLog(User, "Zaktualizowano zlecenie produkcji", JsonSerializer.Serialize(updateProductionOrderDto));
+        _eventRepository.AddLog(User, "Zaktualizowano zlecenie produkcji", JsonSerializer.Serialize(updateProductionOrderDto));
 
         return Ok();
     }
@@ -90,7 +90,7 @@ public class ProductionOrderController(ProductionOrderRepository productionOrder
     [Authorize]
     public IActionResult GetNorms(GetNorms getNorms)
     {
-        logRepository.AddLog(User, "Pobrano normy", JsonSerializer.Serialize(getNorms));
+        _eventRepository.AddLog(User, "Pobrano normy", JsonSerializer.Serialize(getNorms));
         return Ok(productionOrderRepository.GetNorms(getNorms));
     }
     

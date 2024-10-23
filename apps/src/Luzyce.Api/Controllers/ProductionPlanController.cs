@@ -12,13 +12,13 @@ namespace Luzyce.Api.Controllers;
 
 [ApiController]
 [Route("api/productionPlan")]
-public class ProductionPlanController(ProductionPlanRepository productionPlanRepository, LogRepository logRepository) : Controller
+public class ProductionPlanController(ProductionPlanRepository productionPlanRepository, EventRepository eventRepository) : Controller
 {
     [HttpPost]
     [Authorize]
     public IActionResult GetProductionPlans(GetMonthProductionPlanRequest request)
     {
-        logRepository.AddLog(User, "Pobrano plany produkcji", JsonSerializer.Serialize(request));
+        eventRepository.AddLog(User, "Pobrano plany produkcji", JsonSerializer.Serialize(request));
         return Ok(productionPlanRepository.GetProductionPlans(request));
     }
 
@@ -30,11 +30,11 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
 
         if (resp == 0)
         {
-            logRepository.AddLog(User, "Nie udało się dodać pozycji do planu produkcji", JsonSerializer.Serialize(request));
+            eventRepository.AddLog(User, "Nie udało się dodać pozycji do planu produkcji", JsonSerializer.Serialize(request));
             return Conflict();
         }
 
-        logRepository.AddLog(User, "Dodano pozycje do planu produkcji", JsonSerializer.Serialize(request));
+        eventRepository.AddLog(User, "Dodano pozycje do planu produkcji", JsonSerializer.Serialize(request));
 
         return Ok();
     }
@@ -43,7 +43,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
     [Authorize]
     public IActionResult GetProductionPlan(GetProductionPlanPositionsRequest request)
     {
-        logRepository.AddLog(User, "Pobrano plan produkcji", JsonSerializer.Serialize(request));
+        eventRepository.AddLog(User, "Pobrano plan produkcji", JsonSerializer.Serialize(request));
         return Ok(productionPlanRepository.GetProductionPlan(request));
     }
 
@@ -51,7 +51,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
     [Authorize]
     public IActionResult DeletePosition(int id)
     {
-        logRepository.AddLog(User, "Usunięto pozycję z planu produkcji", JsonSerializer.Serialize(new {id}));
+        eventRepository.AddLog(User, "Usunięto pozycję z planu produkcji", JsonSerializer.Serialize(new {id}));
         productionPlanRepository.DeletePosition(id);
         return Ok();
     }
@@ -60,7 +60,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
     [Authorize]
     public IActionResult getShiftSupervisor()
     {
-        logRepository.AddLog(User, "Pobrano Kierowników Zmian", null);
+        eventRepository.AddLog(User, "Pobrano Kierowników Zmian", null);
         return Ok(productionPlanRepository.ShiftSupervisor());
     }
 
@@ -68,7 +68,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
     [Authorize]
     public IActionResult GetHeadsOfMetallurgicalTeams()
     {
-        logRepository.AddLog(User, "Pobrano Hutników", null);
+        eventRepository.AddLog(User, "Pobrano Hutników", null);
         return Ok(productionPlanRepository.GetHeadsOfMetallurgicalTeams());
     }
 
@@ -78,7 +78,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
     {
         productionPlanRepository.UpdateProductionPlan(request);
 
-        logRepository.AddLog(User, "Zaktualizowano pozycje w planie produkcji", JsonSerializer.Serialize(request));
+        eventRepository.AddLog(User, "Zaktualizowano pozycje w planie produkcji", JsonSerializer.Serialize(request));
 
         return Ok();
     }
@@ -90,7 +90,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
 
         if (kwit == null)
         {
-            logRepository.AddLog(User, "Nie udało się pobrać pliku pdf kwitu - kwit nie został znaleziony", JsonSerializer.Serialize(new {id}));
+            eventRepository.AddLog(User, "Nie udało się pobrać pliku pdf kwitu - kwit nie został znaleziony", JsonSerializer.Serialize(new {id}));
             return Results.File(Array.Empty<byte>(), "application/pdf");
         }
 

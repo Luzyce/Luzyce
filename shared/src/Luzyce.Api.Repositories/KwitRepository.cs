@@ -1,9 +1,9 @@
 using Luzyce.Api.Core.Dictionaries;
 using Luzyce.Shared.Models.Document;
 using Luzyce.Shared.Models.Kwit;
-using Luzyce.Shared.Models.Log;
 using Luzyce.Api.Db.AppDb.Data;
 using Luzyce.Api.Db.AppDb.Models;
+using Luzyce.Shared.Models.Event;
 using Microsoft.EntityFrameworkCore;
 using DocumentPositions = Luzyce.Api.Domain.Models.DocumentPositions;
 

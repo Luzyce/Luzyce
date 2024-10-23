@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
-using Luzyce.Core.Models.Kwit;
-using Luzyce.Core.Models.ProductionPlan;
-using Luzyce.Core.Models.User;
+using Luzyce.Shared.Models.Kwit;
+using Luzyce.Shared.Models.ProductionPlan;
+using Luzyce.Shared.Models.User;
 
 namespace Luzyce.WebApp.Services;
 

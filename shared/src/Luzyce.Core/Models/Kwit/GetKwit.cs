@@ -1,5 +1,5 @@
 ﻿using Luzyce.Shared.Models.Document;
-using Luzyce.Shared.Models.Log;
+using Luzyce.Shared.Models.Event;
 
 namespace Luzyce.Shared.Models.Kwit;
 

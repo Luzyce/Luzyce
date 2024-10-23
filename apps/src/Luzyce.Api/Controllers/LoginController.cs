@@ -15,11 +15,11 @@ using User = Luzyce.Api.Domain.Models.User;
 namespace Luzyce.Api.Controllers;
 [Route("api/login")]
 [ApiController]
-public class LoginController(IConfiguration config, UsersRepository usersRepository, LogRepository logRepository) : Controller
+public class LoginController(IConfiguration config, UsersRepository usersRepository, EventRepository eventRepository) : Controller
 {
     private readonly IConfiguration config = config;
     private readonly UsersRepository usersRepository = usersRepository;
-    private readonly LogRepository logRepository = logRepository;
+    private readonly EventRepository _eventRepository = eventRepository;
 
     private string generateJSONWebToken(User user, bool isHashLogin, Client client)
     {
@@ -89,14 +89,14 @@ public class LoginController(IConfiguration config, UsersRepository usersReposit
 
         if (user == null)
         {
-            logRepository.AddLog(client.Id, dto.Hash, JsonSerializer.Serialize(dto));
+            _eventRepository.AddLog(client.Id, dto.Hash, JsonSerializer.Serialize(dto));
 
             return Unauthorized();
         }
 
         var tokenString = generateJSONWebToken(user, isHashLogin, client);
 
-        logRepository.AddLog(client.Id, user.Id,"Zalogowano pomyślnie", user.Hash, JsonSerializer.Serialize(dto));
+        _eventRepository.AddLog(client.Id, user.Id,"Zalogowano pomyślnie", user.Hash, JsonSerializer.Serialize(dto));
 
         return Ok(
             new LoginResponseDto

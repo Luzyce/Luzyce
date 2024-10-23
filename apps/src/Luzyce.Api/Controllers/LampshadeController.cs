@@ -8,16 +8,16 @@ namespace Luzyce.Api.Controllers;
 
 [ApiController]
 [Route("api/lampshade")]
-public class LampshadeController(LampshadeRepository lampshadeRepository, LogRepository logRepository) : Controller
+public class LampshadeController(LampshadeRepository lampshadeRepository, EventRepository eventRepository) : Controller
 {
     private readonly LampshadeRepository lampshadeRepository = lampshadeRepository;
-    private readonly LogRepository logRepository = logRepository;
+    private readonly EventRepository _eventRepository = eventRepository;
     
     [HttpGet("variants")]
     [Authorize]
     public IActionResult GetLampshadeVariants()
     {
-        logRepository.AddLog(User, "Pobrano warianty kloszy", null);
+        _eventRepository.AddLog(User, "Pobrano warianty kloszy", null);
         return Ok(new GetVariantsResponseDto
         {
             Variants = lampshadeRepository.GetLampshadeVariants().Select(x => new GetVariantResponseDto
@@ -37,11 +37,11 @@ public class LampshadeController(LampshadeRepository lampshadeRepository, LogRep
         
         if (variant == null)
         {
-            logRepository.AddLog(User, "Nie udało się uzyskać wariantu klosza – wariant nie został znaleziony", JsonSerializer.Serialize(new {shortName}));
+            _eventRepository.AddLog(User, "Nie udało się uzyskać wariantu klosza – wariant nie został znaleziony", JsonSerializer.Serialize(new {shortName}));
             return NotFound();
         }
 
-        logRepository.AddLog(User, "Pobrano wariant klosza", JsonSerializer.Serialize(new {shortName}));
+        _eventRepository.AddLog(User, "Pobrano wariant klosza", JsonSerializer.Serialize(new {shortName}));
 
         return Ok(new GetVariantResponseDto()
         {

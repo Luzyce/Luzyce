@@ -9,16 +9,16 @@ namespace Luzyce.Api.Controllers;
 
 [Route("api/user")]
 [ApiController]
-public class UserController(UsersRepository usersRepository, LogRepository logRepository) : ControllerBase
+public class UserController(UsersRepository usersRepository, EventRepository eventRepository) : ControllerBase
 {
     private readonly UsersRepository usersRepository = usersRepository;
-    private readonly LogRepository logRepository = logRepository;
+    private readonly EventRepository _eventRepository = eventRepository;
 
     [HttpGet]
     [Authorize]
     public IActionResult Get()
     {
-        logRepository.AddLog(User, "Get users", null);
+        _eventRepository.AddLog(User, "Get users", null);
         return Ok(
             usersRepository.GetUsers()
                 .Select(x => new GetUserResponseDto
@@ -38,13 +38,13 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
         var user = usersRepository.GetUserById(id);
         if (user == null)
         {
-            logRepository.AddLog(User, "Failed to get user - user not found", JsonSerializer.Serialize(new {id}));
+            _eventRepository.AddLog(User, "Failed to get user - user not found", JsonSerializer.Serialize(new {id}));
             return NotFound();
         }
 
         var isUserLocked = usersRepository.IsUserLocked(user.Id);
 
-        logRepository.AddLog(User, "Get user", JsonSerializer.Serialize(new {id}));
+        _eventRepository.AddLog(User, "Get user", JsonSerializer.Serialize(new {id}));
 
         return Ok(
             new GetUserForUpdateDto
@@ -69,7 +69,7 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
 
         dto.Password = "";
 
-        logRepository.AddLog(User, "Create user", JsonSerializer.Serialize(dto));
+        _eventRepository.AddLog(User, "Create user", JsonSerializer.Serialize(dto));
 
         return CreatedAtAction(
             nameof(Get),
@@ -90,7 +90,7 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
         var user = usersRepository.GetUserById(id);
         if (user == null)
         {
-            logRepository.AddLog(User, "Failed to update user - user not found", JsonSerializer.Serialize(new {id}));
+            _eventRepository.AddLog(User, "Failed to update user - user not found", JsonSerializer.Serialize(new {id}));
             return NotFound();
         }
 
@@ -98,7 +98,7 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
 
         usersRepository.UpdateUser(user);
 
-        logRepository.AddLog(User, "Update user", JsonSerializer.Serialize(new {id, dto}));
+        _eventRepository.AddLog(User, "Update user", JsonSerializer.Serialize(new {id, dto}));
 
         return Ok(new GetUserResponseDto
         {
@@ -116,7 +116,7 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
         var user = usersRepository.GetUserById(id);
         if (user == null)
         {
-            logRepository.AddLog(User, "Nie udało się zaktualizować hasła użytkownika — użytkownik nie został znaleziony", JsonSerializer.Serialize(new {id}));
+            _eventRepository.AddLog(User, "Nie udało się zaktualizować hasła użytkownika — użytkownik nie został znaleziony", JsonSerializer.Serialize(new {id}));
             return NotFound();
         }
 
@@ -124,7 +124,7 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
 
         usersRepository.UpdatePassword(user);
 
-        logRepository.AddLog(User, "Zaktualizowano hasło użytkownika", JsonSerializer.Serialize(new {id}));
+        _eventRepository.AddLog(User, "Zaktualizowano hasło użytkownika", JsonSerializer.Serialize(new {id}));
 
         return Ok(new GetUserResponseDto
         {
@@ -142,13 +142,13 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
         var user = usersRepository.GetUserById(id);
         if (user == null)
         {
-            logRepository.AddLog(User, "Nie udało się usunąć użytkownika – użytkownik nie został znaleziony", JsonSerializer.Serialize(new {id}));
+            _eventRepository.AddLog(User, "Nie udało się usunąć użytkownika – użytkownik nie został znaleziony", JsonSerializer.Serialize(new {id}));
             return NotFound();
         }
 
         usersRepository.DeleteUser(user);
 
-        logRepository.AddLog(User, "Usunięto użytkownika", JsonSerializer.Serialize(new {id}));
+        _eventRepository.AddLog(User, "Usunięto użytkownika", JsonSerializer.Serialize(new {id}));
 
         return Ok();
     }
@@ -157,7 +157,7 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
     [Authorize]
     public IActionResult GetRoles()
     {
-        logRepository.AddLog(User, "Pobrano role", null);
+        _eventRepository.AddLog(User, "Pobrano role", null);
 
         return Ok(
             usersRepository.GetRoles()
@@ -176,11 +176,11 @@ public class UserController(UsersRepository usersRepository, LogRepository logRe
         var role = usersRepository.GetRole(id);
         if (role == null)
         {
-            logRepository.AddLog(User, "Nie udało się pobrać roli – rola nie została znaleziona", JsonSerializer.Serialize(new {id}));
+            _eventRepository.AddLog(User, "Nie udało się pobrać roli – rola nie została znaleziona", JsonSerializer.Serialize(new {id}));
             return NotFound();
         }
 
-        logRepository.AddLog(User, "Pobrano role", JsonSerializer.Serialize(new {id}));
+        _eventRepository.AddLog(User, "Pobrano role", JsonSerializer.Serialize(new {id}));
 
         return Ok(new GetRoleDto
         {

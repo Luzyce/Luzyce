@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
-using Luzyce.Core.Models.Log;
-using Luzyce.Core.Models.User;
+using Luzyce.Shared.Models.Event;
+using Luzyce.Shared.Models.User;
 
 namespace Luzyce.WebApp.Services;
 
@@ -68,13 +68,13 @@ public class UserService(HttpClient httpClient, TokenValidationService tokenVali
         return null;
     }
 
-    public async Task<GetLogs> GetLogsAsync(int offset, int limit)
+    public async Task<GetEvents> GetLogsAsync(int offset, int limit)
     {
         if (!await tokenValidationService.IsTokenValid())
         {
-            return new GetLogs();
+            return new GetEvents();
         }
-        return await httpClient.GetFromJsonAsync<GetLogs>($"api/log/unidentified/{offset}/{limit}") ?? new GetLogs();
+        return await httpClient.GetFromJsonAsync<GetEvents>($"api/log/unidentified/{offset}/{limit}") ?? new GetEvents();
     }
 
     public async Task AssignUserAsync(AssignUserDto assignUserDto)

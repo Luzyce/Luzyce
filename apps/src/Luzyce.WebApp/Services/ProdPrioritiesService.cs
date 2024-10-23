@@ -1,8 +1,8 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
-using Luzyce.Core.Models.ProductionOrder;
-using Luzyce.Core.Models.ProductionPlan;
-using Luzyce.Core.Models.ProductionPriority;
+using Luzyce.Shared.Models.ProductionOrder;
+using Luzyce.Shared.Models.ProductionPlan;
+using Luzyce.Shared.Models.ProductionPriority;
 
 namespace Luzyce.WebApp.Services;
 

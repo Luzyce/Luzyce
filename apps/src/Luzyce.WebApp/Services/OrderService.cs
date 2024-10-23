@@ -1,8 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
-using Luzyce.Core.Models.Lampshade;
-using Luzyce.Core.Models.Order;
-using Luzyce.Core.Models.ProductionOrder;
+using Luzyce.Shared.Models.Lampshade;
+using Luzyce.Shared.Models.Order;
 
 namespace Luzyce.WebApp.Services;
 

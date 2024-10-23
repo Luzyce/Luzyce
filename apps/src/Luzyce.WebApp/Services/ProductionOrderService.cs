@@ -1,6 +1,6 @@
 ﻿using System.Net;
 using System.Net.Http.Json;
-using Luzyce.Core.Models.ProductionOrder;
+using Luzyce.Shared.Models.ProductionOrder;
 
 namespace Luzyce.WebApp.Services;
 

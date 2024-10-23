@@ -1,7 +1,7 @@
 @page "/users/new"
 @using System.Globalization
-@using Luzyce.Core.Models.Log
-@using Luzyce.Core.Models.User
+@using Luzyce.Shared.Models.Event
+@using Luzyce.Shared.Models.User
 @using Luzyce.WebApp.Services
 @inject UserService UserService
 @inject NavigationManager NavManager
@@ -113,7 +113,7 @@
                     <tbody>
                     @if (logs != null)
                     {
-                        @foreach (var log in logs.Logs)
+                        @foreach (var log in logs.Events)
                         {
                             <tr>
                                 <th scope="row">@TimeAgo(log.Timestamp)</th>
@@ -143,8 +143,8 @@
         Password = string.Empty,
         Hash = string.Empty
     };
-    private List<GetLog>? assignedLogs;
-    private GetLogs? logs;
+    private List<GetEvent>? assignedLogs;
+    private GetEvents? logs;
     private List<GetRoleDto>? roles;
 
     protected override async Task OnInitializedAsync()
@@ -178,7 +178,7 @@
         }
     }
 
-    private Task AssignHash(GetLog log)
+    private Task AssignHash(GetEvent log)
     {
         if (log.Hash == null)
         {
@@ -186,7 +186,7 @@
         }
 
         user.Hash = log.Hash;
-        assignedLogs = new List<GetLog> { log };
+        assignedLogs = new List<GetEvent> { log };
         return Task.CompletedTask;
     }
 

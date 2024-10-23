@@ -1,5 +1,5 @@
-﻿using Luzyce.Core.Models.User;
-using System.Net;
+﻿using System.Net;
+using Luzyce.Shared.Models.User;
 
 namespace Luzyce.WebApp.Services;
 
