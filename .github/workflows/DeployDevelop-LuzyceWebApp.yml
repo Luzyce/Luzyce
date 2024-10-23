@@ -1,0 +1,51 @@
+name: Deploy Develop - Luzyce.WebApp
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_run:
+    runs-on: self-hosted
+    environment: Develop
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Stop & clean old containers
+        run: |
+          if [ $(docker container ls -a -q -f name=luzycewebapp) ]; then
+            docker container stop luzycewebapp
+            docker container rm luzycewebapp
+          fi
+          if [ $(docker image ls -q luzycewebapp:latest) ]; then
+            docker image rm luzycewebapp:latest
+          fi
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/src/Luzyce.WebApp
+          file: /apps/src/Luzyce.WebApp/Dockerfile
+          push: false
+          load: true
+          tags: luzycewebapp:latest
+
+      - name: Run Docker container
+        run: |
+          docker run \
+            -d \
+            -p 35133:35133 \
+            -e ASPNETCORE_HTTP_PORTS=35133 \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            --name luzycewebapp \
+            luzycewebapp:latest
+
+      - name: Check container logs
+        run: |
+          sleep 10
+          docker logs $(docker ps -q --last 1)
