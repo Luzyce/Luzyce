@@ -1,0 +1,181 @@
+﻿@using Blazor.Diagrams
+@using Blazor.Diagrams.Core.Geometry
+@using Blazor.Diagrams.Core.Models
+@using Blazor.Diagrams.Core.PathGenerators
+@using Blazor.Diagrams.Core.Routers
+@using Blazor.Diagrams.Options
+@using Luzyce.Core.Models.DocumentDependencyChart
+@using Blazor.Diagrams.Components
+@using Blazor.Diagrams.Core.Anchors
+@using Luzyce.WebApp.Pages.BlazorDiagrams
+@using Luzyce.WebApp.Services
+@using DocumentWidget = Luzyce.WebApp.Pages.BlazorDiagrams.DocumentWidget
+@inject DocumentDependencyChartService DocumentDependencyChartService
+
+@if (!visible)
+{
+    return;
+}
+
+<style>
+    .diagram-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+    }
+    #dependencyChartModal .modal-body {
+        padding: 0;
+    }
+
+</style>
+
+<div class="modal fade show" id="dependencyChartModal" tabindex="-1" aria-labelledby="dependencyChartModal" aria-hidden="true" style="display: block">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="dependencyChartModalLabel">Relacje pomiędzy dokumentami</h1>
+                <button type="button" class="btn-close" @onclick="@(() => visible = false)" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="diagram-container">
+                    <CascadingValue Value="_diagram" @ref="cascadingValue">
+                        <DiagramCanvas></DiagramCanvas>
+                    </CascadingValue>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private GetDocumentDependencyChart? documentDependencyChart;
+    private CascadingValue<BlazorDiagram>? cascadingValue;
+    private int lowestY;
+    private int clickedDocumentId;
+    private List<int> productionPlanIds = [];
+    private string clickedDocumentType = string.Empty;
+    private readonly BlazorDiagram _diagram;
+    private bool visible = false;
+
+    [Parameter]
+    [EditorRequired]
+    public GetDocumentDependencyChartRequest Request { get; set; }
+
+    public DocumentDependencyChart()
+    {
+        var options = new BlazorDiagramOptions
+        {
+            AllowMultiSelection = false,
+            Zoom =
+            {
+                Enabled = false,
+            },
+            Links =
+            {
+                DefaultRouter = new NormalRouter(),
+                DefaultPathGenerator = new SmoothPathGenerator()
+            }
+        };
+        _diagram = new BlazorDiagram(options);
+
+        _diagram.RegisterComponent<DocumentNode, DocumentWidget>();
+        _diagram.RegisterComponent<NodeInformationControl, NodeInformationControlWidget>();
+    }
+
+    private Task AddDocuments(List<GetDocumentDependencyChart> derivativesList, NodeModel order, BlazorDiagram diagram, PortModel rightPort, int level)
+    {
+        foreach (var derivatives in derivativesList)
+        {
+            if (level == 3 && productionPlanIds.Contains(derivatives.Id))
+            {
+                continue;
+            }
+
+            if (derivativesList.IndexOf(derivatives) != 0)
+            {
+                lowestY += 100;
+            }
+
+            var positionY = lowestY;
+
+            if (level == 3)
+            {
+                positionY -= 12;
+                productionPlanIds.Add(derivatives.Id);
+            }
+
+            var document = diagram.Nodes.Add(new DocumentNode(position:
+                new Point((level - 1) * 280 + 50, positionY))
+            {
+                Title = derivatives.Name,
+                IsSelected = clickedDocumentId == derivatives.Id && clickedDocumentType == derivatives.DocumentType,
+                DocumentType = derivatives.DocumentType,
+                AddrToRedirect = derivatives.AddrToRedirect
+            });
+
+            var leftPort = document.AddPort(PortAlignment.Left);
+            diagram.Controls.AddFor(document).Add(new NodeInformationControl(derivatives.Positions));
+            diagram.Links.Add(new LinkModel(new SinglePortAnchor(rightPort), new SinglePortAnchor(leftPort))
+            {
+                PathGenerator = new StraightPathGenerator(),
+                Router = new OrthogonalRouter()
+            });
+
+            if (derivatives.Derivatives == null || derivatives.Derivatives.Count == 0)
+            {
+                continue;
+            }
+
+            var newRightPort = document.AddPort(PortAlignment.Right);
+            AddDocuments(derivatives.Derivatives, document, diagram, newRightPort, level + 1);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        await ShowDependencyChart(Request);
+    }
+
+    private async Task ShowDependencyChart(GetDocumentDependencyChartRequest getDocumentDependencyChartRequest)
+    {
+        productionPlanIds.Clear();
+        _diagram.Nodes.Clear();
+
+        clickedDocumentId = getDocumentDependencyChartRequest.DocumentId;
+        clickedDocumentType = getDocumentDependencyChartRequest.DocumentType;
+        lowestY = 50;
+
+        documentDependencyChart = await DocumentDependencyChartService.GetDocumentDependencyChart(getDocumentDependencyChartRequest);
+
+        if (documentDependencyChart == null)
+        {
+            return;
+        }
+
+        var order = _diagram.Nodes.Add(new DocumentNode(position: new Point(50, lowestY + 15))
+        {
+            Title = documentDependencyChart.Name,
+            DocumentType = "Zamówienie",
+            AddrToRedirect = string.Empty,
+        });
+
+        var rightPort = order.AddPort(PortAlignment.Right);
+        _diagram.Controls.AddFor(order).Add(new NodeInformationControl(documentDependencyChart?.Positions));
+
+        if (documentDependencyChart!.Derivatives == null)
+        {
+            return;
+        }
+
+        var derivativesList = documentDependencyChart.Derivatives;
+
+        await AddDocuments(derivativesList, order, _diagram, rightPort, 2);
+
+        visible = true;
+        StateHasChanged();
+    }
+
+}

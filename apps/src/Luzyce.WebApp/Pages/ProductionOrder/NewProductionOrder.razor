@@ -1,0 +1,535 @@
+@page "/productionOrder/new"
+@using System.Text.RegularExpressions
+@using System.Threading
+@using Luzyce.Core.Models.Lampshade
+@using Luzyce.Core.Models.Order
+@using Luzyce.Core.Models.ProductionOrder
+@using Luzyce.WebApp.Services
+@inject OrderService OrderService
+@inject ProductionOrderService ProductionOrderService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+@if (orders == null)
+{
+    <Loader @ref="loader"/>
+    return;
+}
+
+<h3>Nowe zlecenie produkcji</h3>
+<div class="row">
+    <div class="col form-group">
+        <label>Nazwa klienta:</label>
+        <input type="text" class="form-control" @bind="customerName" @oninput="OnCustomerNameInput" disabled="@isAnyProductionOrderPositions"/>
+    </div>
+    <div class="col form-group">
+        <label>Data początkowa:</label>
+        <input type="date" class="form-control" @bind="startDate" @oninput="OnStartDateInput" disabled="@isAnyProductionOrderPositions"/>
+    </div>
+    <div class="col form-group">
+        <label>Data końcowa:</label>
+        <input type="date" class="form-control" @bind="endDate" @oninput="OnEndDateInput" disabled="@isAnyProductionOrderPositions"/>
+    </div>
+    <div class="col form-group">
+        <label>Statusy:</label>
+        <select class="form-select" @bind="status" @oninput="OnStatusInput" disabled="@isAnyProductionOrderPositions">
+            <option value="1">Niezrealizowane</option>
+            <option value="2">Częściowo zrealizowane</option>
+            <option value="3">Zrealizowane</option>
+        </select>
+    </div>
+</div>
+<br>
+<div class="row">
+    <div class="col-md-4">
+        <ul class="list-group">
+            @foreach (var order in orders!.Orders)
+            {
+                <li class="list-group-item order-row @(order.Id == selectedOrderId ? "selected" : "")"
+                    id="order(@order.Id)"
+                    @onclick="@(isAnyProductionOrderPositions ? () => { } : () => _ = SelectOrder(order.Id))"
+                    style="cursor: @(isAnyProductionOrderPositions ? "not-allowed" : "pointer")">
+                    @if (order.OriginalNumber is not (null or ""))
+                    {
+                        @($"{order.Number} - {order.OriginalNumber} - {order.Date:dd.MM.yyyy}")
+                    } else {
+                        @($"{order.Number} - {order.Date:dd.MM.yyyy}")
+                    }
+                    <br>
+                    <span style="font-size: 0.7em;">@order.CustomerName</span>
+                </li>
+            }
+        </ul>
+
+        <br>
+        <nav aria-label="Page navigation">
+            <ul class="pagination" id="orderer">
+                <li class="page-item @(orders.CurrentPage < 2 || isAnyProductionOrderPositions ? "disabled" : "")">
+                    <a class="page-link" @onclick="@(async () => await LoadOrders(orders.CurrentPage - 1))">Poprzedni</a>
+                </li>
+                @for (var i = orders.CurrentPage - 2; i <= orders.CurrentPage + 2; i++)
+                {
+                    if (i < 1 || i > orders.TotalPages)
+                    {
+                        continue;
+                    }
+
+                    var pageIndex = i;
+                    <li class="page-item @(orders.CurrentPage == pageIndex ? "active" : "") @(isAnyProductionOrderPositions ? "disabled" : "")">
+                        <a class="page-link" @onclick="@(async () => await LoadOrders(pageIndex))">@pageIndex</a>
+                    </li>
+                }
+                <li class="page-item @(orders.CurrentPage > orders.TotalPages - 1 || isAnyProductionOrderPositions ? "disabled" : "")">
+                    <a class="page-link" @onclick="@(async () => await LoadOrders(orders.CurrentPage + 1))">Kolejny</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    <div class="col-md-8">
+        @if (selectedOrder != null && selectedOrderLoaded)
+        {
+            <h3>Pozycje dla @selectedOrder.Number</h3>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Towar</th>
+                    <th>Klosz</th>
+                    <th>Wariant</th>
+                    <th>Dekor</th>
+                    <th>Ilość</th>
+                    <th>Na mag.</th>
+                    <th>Do prod.</th>
+                </tr>
+                </thead>
+                <tbody>
+                @foreach (var position in selectedOrder.Positions)
+                {
+                    <tr>
+                        <td>
+                            <div style="width: 300px;">@position.Symbol @position.ProductName</div>
+                        </td>
+                        <td>
+                            <input type="text" 
+                                   class="form-control symbol-input"
+                                   value="@lampshades[position.Id]"
+                                   @oninput="(e) => OnLampshadeChanged(position.Id, e)"/>
+                        </td>
+                        <td>
+                            <select class="form-control wariant-input"
+                                    value="@variantIds[position.Id]"
+                                    @onchange="(e) => OnVariantChanged(position.Id, e)">
+                                <option value="" disabled selected></option>
+                                @foreach (var variant in variants!.Variants)
+                                {
+                                    <option value="@variant.Id">@variant.Name</option>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control symbol-input"
+                                   value="@dekors[position.Id]"
+                                   @oninput="(e) => OnDekorChanged(position.Id, e)"/>
+                        </td>
+                        <td>@($"{position.Quantity:0}") @position.Unit</td>
+                        @if (position.OrderPositionLp != null && position.OrderPositionLp.Value - 1 >= 0 && position.OrderPositionLp.Value - 1 < productWarehousesStocks.Count)
+                        {
+                            <td style="@GetBackgroundColor(productWarehousesStocks[position.OrderPositionLp.Value - 1].Quantity, position.Quantity)">
+                                <a type="button" class="btn" @onclick="() => quantitiesInStockComponent?.ShowStockModal(productWarehousesStocks[position.OrderPositionLp.Value - 1], position.Unit!)!">
+                                    @productWarehousesStocks[position.OrderPositionLp.Value - 1].Quantity @position.Unit
+                                </a>
+                            </td>
+                        }
+                        else
+                        {
+                            <td></td>
+                        }
+                        <td>
+                            <div class="input-group mb-3">
+                                <input type="number" class="form-control narrow-input" min="0"
+                                       data-position-id="@position.Id"
+                                       @oninput="(e) => OnQuantityInput(position.Id, e)"/>
+
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" @onclick="() => CalculateProductionOrderQuantity(position)">Wylicz</button>
+                                </div>
+                                @if (norms.ContainsKey(position.Id) && norms[position.Id] == 0)
+                                {
+                                    <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='red' class='bi bi-exclamation-triangle-fill ml-2' viewBox='0 0 16 16'>
+                                        <path d='M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2'/>
+                                    </svg>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            @if (selectedOrder.Remarks != "")
+            {
+                <p>Uwagi: @selectedOrder.Remarks</p>
+            }
+            <div class="btn-right">
+                <button class="btn btn-secondary" @onclick="OnReset" disabled="@(!isAnyProductionOrderPositions)">Zresetuj</button>
+                <button class="btn btn-primary" @onclick="OnCalculateAll">Wylicz wszystko</button>
+                <button class="btn btn-primary" @onclick="OnSave" disabled="@(!isAnyProductionOrderPositions)">Zapisz</button>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function initTooltips() {
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    }
+    
+    function setInputValue(positionId, value) {
+        var input = document.querySelector(`input[data-position-id="${positionId}"]`);
+        if (input) {
+            input.value = value;
+        }
+    }
+</script>
+
+<QuantitiesInStock @ref="quantitiesInStockComponent"/>
+
+@code {
+    private GetOrdersResponseDto? orders;
+    private GetOrderResponseDto? selectedOrder;
+    private string customerName = "";
+    private int selectedOrderId;
+    private DateTime? startDate;
+    private DateTime? endDate;
+    private int status = 1;
+    private readonly Dictionary<int, int> ProductionOrderPositions = new Dictionary<int, int>();
+    private bool isAnyProductionOrderPositions;
+    private CreateProductionOrderRequest? productionOrderDto;
+    private GetVariantsResponseDto? variants;
+    private readonly Dictionary<int, int> variantIds = new();
+    private readonly Dictionary<int, string> dekors = new();
+    private readonly Dictionary<int, string> lampshades = new();
+    private readonly Dictionary<int, int> norms = new();
+    private List<ProductWarehouseStocks> productWarehousesStocks = [];
+    private QuantitiesInStock? quantitiesInStockComponent;
+    private Loader? loader;
+    private bool selectedOrderLoaded = false;
+
+    private CancellationTokenSource cts = new CancellationTokenSource();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders(1);
+        variants = await OrderService.GetVariantsAsync();
+    }
+
+    private async Task SelectOrder(int orderId)
+    {
+        selectedOrderLoaded = false;
+        selectedOrderId = orderId;
+        selectedOrder = orders?.Orders.FirstOrDefault(o => o.Id == orderId);
+        if (selectedOrder != null)
+        {
+            lampshades.Clear();
+            variantIds.Clear();
+            dekors.Clear();
+            norms.Clear();
+            
+            foreach (var position in selectedOrder.Positions)
+            {
+                var (lampshade, lastMatchingVariantId, dekor) = GetMatchingVariantInfo(position.Symbol);
+                lampshades.Add(position.Id, lampshade);
+                variantIds.Add(position.Id, lastMatchingVariantId ?? 0);
+                dekors.Add(position.Id, dekor);
+            }
+            
+            await LoadWarehouseQuantities(selectedOrder);
+            
+            var getNorms = new GetNorms();
+    
+            foreach (var position in selectedOrder.Positions)
+            {
+                getNorms.Norms.Add(new GetNorm
+                {
+                    Lampshade = lampshades[position.Id],
+                    Variant = variants!.Variants.FirstOrDefault(v => v.Id == variantIds[position.Id])?.Name ?? ""
+                });
+            }
+    
+            var getNormsResponse = await ProductionOrderService.GetNormsAsync(getNorms);
+            
+            for (var i = 0; i < getNormsResponse?.Norms.Count; i++)
+            {
+                norms.Add(selectedOrder.Positions[i].Id, getNormsResponse.Norms[i].Norm);
+            }
+            
+            selectedOrderLoaded = true;
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadOrders(int pageNumber)
+    {
+        await cts.CancelAsync();
+        cts = new CancellationTokenSource();
+        var token = cts.Token;
+
+        try
+        {
+            var getOrdersDto = new GetOrdersDto
+            {
+                CustomerName = customerName,
+                StartDate = startDate,
+                EndDate = endDate,
+                Status = status
+            };
+            orders = await OrderService.GetOrdersAsync(pageNumber, getOrdersDto, token);
+            selectedOrder = null;
+            StateHasChanged();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task LoadWarehouseQuantities(GetOrderResponseDto order)
+    {
+        var productIds = order.Positions.Select(p => p.ProductId).ToList();
+        var stockRequest = new StockRequest
+        {
+            ProductIds = productIds,
+            WarehouseIds = [1, 7, 8, 9, 11, 12]
+        };
+        var stockResponse = await OrderService.GetStockAsync(stockRequest);
+        if (stockResponse != null)
+        {
+            productWarehousesStocks = stockResponse.ProductWarehousesStocks;
+        }
+    }
+
+    private async Task OnCustomerNameInput(ChangeEventArgs e)
+    {
+        customerName = e.Value?.ToString() ?? "";
+        await LoadOrders(pageNumber: 1);
+    }
+
+    private async Task OnStartDateInput(ChangeEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Value?.ToString()))
+        {
+            startDate = null; 
+        }
+        else
+        {
+            startDate = DateTime.Parse(e.Value.ToString() ?? string.Empty);
+        }
+
+        await LoadOrders(pageNumber: 1);
+    }
+
+    private async Task OnEndDateInput(ChangeEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Value?.ToString()))
+        {
+            endDate = null;
+        }
+        else
+        {
+            endDate = DateTime.Parse(e.Value.ToString() ?? string.Empty);
+        }
+
+        await LoadOrders(pageNumber: 1);
+    }
+    
+    private async Task OnStatusInput(ChangeEventArgs e)
+    {
+        status = int.Parse(e.Value?.ToString() ?? "1");
+        await LoadOrders(pageNumber: 1);
+    }
+
+    private void OnQuantityInput(int positionId, ChangeEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Value?.ToString()))
+        {
+            return;
+        }
+
+        var isValid = int.TryParse(e.Value?.ToString(), out var newQuantity);
+
+        if (isValid && newQuantity >= 0)
+        {
+            if (newQuantity != 0)
+            {
+                ProductionOrderPositions[positionId] = newQuantity;
+            }
+            else
+            {
+                ProductionOrderPositions.Remove(positionId);
+            }
+        }
+
+        isAnyProductionOrderPositions = ProductionOrderPositions.Values.Any(quantity => quantity != 0);
+
+        StateHasChanged();
+    }
+
+    private async Task OnReset()
+    {
+        ProductionOrderPositions.Clear();
+        
+        foreach (var position in selectedOrder?.Positions ?? Enumerable.Empty<GetOrderPositionResponseDto>())
+        {
+            await JS.InvokeVoidAsync("setInputValue", position.Id, "");
+        }
+
+        isAnyProductionOrderPositions = false;
+        StateHasChanged();
+    }
+
+    private async Task OnSave()
+    {
+        productionOrderDto = new CreateProductionOrderRequest
+        {
+            Order = selectedOrder!,
+            ProductionOrderPositions = selectedOrder!.Positions
+                .Where(position => ProductionOrderPositions.ContainsKey(position.Id))
+                .Select(position => new CreateProductionOrder
+                {
+                    DocumentPositionId = position.Id,
+                    Symbol = lampshades[position.Id],
+                    VariantId = variantIds[position.Id],
+                    Dekor = dekors[position.Id],
+                    Gross = (int)position.Quantity,
+                    Net = ProductionOrderPositions[position.Id],
+                    SubiektProductId = position.ProductId
+                })
+                .ToList()
+        };
+
+        var response = await ProductionOrderService.CreateProductionOrderAsync(productionOrderDto);
+        
+        if (response != null)
+        {
+            NavigationManager.NavigateTo("/productionOrder/edit/" + response);
+        }
+        else
+        {
+            Console.WriteLine("Error");
+        }
+        
+        StateHasChanged();
+    }
+
+    private (string klosz, int? lastMatchingVariantId, string dekor) GetMatchingVariantInfo(string symbol)
+    {
+        var regexMatch = Regex.Match(symbol, @"^[A-Z]{2}\-?\d[^\-\/\ ]{2,}");
+        var klosz = regexMatch.Value;
+        int? lastMatchingVariantId = null;
+        string? dekor = null;
+
+        if (regexMatch.Success)
+        {
+            lastMatchingVariantId = variants!.Variants
+                .Where(variant => symbol.Contains(variant.ShortName))
+                .Select(variant => variant.Id)
+                .LastOrDefault();
+
+            if (lastMatchingVariantId != null)
+            {
+                var matchingVariant = variants.Variants
+                    .FirstOrDefault(v => v.Id == lastMatchingVariantId);
+
+                if (matchingVariant != null)
+                {
+                    dekor = symbol.Replace($"{klosz}-{matchingVariant.ShortName}", "").TrimStart('-');
+                }
+            }
+        }
+
+        if (dekor == klosz)
+        {
+            dekor = string.Empty;
+        }
+
+        return (klosz, lastMatchingVariantId, dekor ?? string.Empty);
+    }
+
+    private void OnVariantChanged(int positionId, ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var newVariantId)) return;
+        
+        variantIds[positionId] = newVariantId;
+            
+        StateHasChanged();
+    }
+
+    private void OnDekorChanged(int positionId, ChangeEventArgs e)
+    {
+        var newDekor = e.Value?.ToString() ?? "";
+        dekors[positionId] = newDekor;
+        StateHasChanged();
+    }
+    
+    private void OnLampshadeChanged(int positionId, ChangeEventArgs e)
+    {
+        var newLampshade = e.Value?.ToString() ?? "";
+        lampshades[positionId] = newLampshade;
+        StateHasChanged();
+    }
+
+    private static string GetBackgroundColor(decimal stockQuantity, decimal orderQuantity)
+    {
+        var ratio = stockQuantity / orderQuantity;
+
+        return ratio switch
+        {
+            >= 0.9m and <= 1.1m => "background-color: yellow;",
+            > 1.1m => "background-color: green;",
+            _ => ""
+        };
+    }
+
+    private async void CalculateProductionOrderQuantity(GetOrderPositionResponseDto position)
+    {
+        int productionOrderQuantity;
+                 
+        if (position.OrderPositionLp != null && position.OrderPositionLp.Value - 1 >= 0 && position.OrderPositionLp.Value - 1 < productWarehousesStocks.Count)
+        {
+            productionOrderQuantity = 
+                (int)Math.Max(
+                    position.Quantity - 
+                    productWarehousesStocks[position.OrderPositionLp!.Value - 1].Quantity, 0);
+        } else {
+            productionOrderQuantity = 0;
+        }
+        
+        var norm = norms.GetValueOrDefault(position.Id);
+
+        if (norm != 0)
+        {
+            productionOrderQuantity = (int)Math.Ceiling((decimal)productionOrderQuantity / norm) * norm;
+        }
+        
+        OnQuantityInput(position.Id, new ChangeEventArgs { Value = productionOrderQuantity.ToString() });
+        await JS.InvokeVoidAsync(
+            "setInputValue", 
+            position.Id, 
+            productionOrderQuantity == 0 ? "" : productionOrderQuantity.ToString());
+    }
+    
+    private Task OnCalculateAll()
+    {
+        if (selectedOrder?.Positions == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        foreach (var position in selectedOrder.Positions)
+        {
+            CalculateProductionOrderQuantity(position);
+        }
+
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+}

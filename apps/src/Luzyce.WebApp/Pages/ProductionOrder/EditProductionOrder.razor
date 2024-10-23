@@ -1,0 +1,252 @@
+﻿@page "/productionOrder/edit/{prodOrderId:int}"
+@using Luzyce.Core.Models.Order
+@using Luzyce.Core.Models.ProductionOrder
+@using Luzyce.WebApp.Services
+@inject NavigationManager NavManager
+@inject ProductionOrderService ProductionOrderService
+@inject OrderService OrderService
+@inject IJSRuntime JSRuntime
+
+
+@if (prodOrder == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+    return;
+}
+
+<h2>Edycja Zlecenia Produkcyjnego: @prodOrder!.Number</h2>
+<form @onsubmit="OpenConfirmationModal">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Towar</th>
+            <th>Na zam.</th>
+            <th>Na mag.</th>
+            <th>Ilość wyk.</th>
+            <th>Ilość zmian</th>
+            <th>Ilość</th>
+            <th>Ilość na zmianę</th>
+            @* <th>Data wykonania</th> *@
+            <th>Nr Klosza u Klienta</th>
+            <th>Uwagi</th>
+            <th>Sposób pakowania</th>
+            <th>Po ile pakowane</th>
+        </tr>
+        </thead>
+        @foreach (var position in prodOrder.Positions!)
+        {
+            <tr>
+                <td>
+                    @position.Lampshade.Code @position.LampshadeNorm.Variant.Name @position.LampshadeDekor
+                </td>
+                <td class="div" style="text-align: right;">
+                    @position.QuantityGross @position.Unit
+                </td>
+                <td class="div" style="text-align: right;">
+                    <a type="button" class="btn" @onclick="() => quantitiesInStockComponent.ShowStockModal(productWarehousesStocks[prodOrder.Positions.IndexOf(position)], unit)">@productWarehousesStocks[prodOrder.Positions.IndexOf(position)].Quantity @position.Unit</a>
+                </td>
+                <td>
+                    <a type="button" class="btn" @onclick="() => quantitiesOnPlansComponent.ShowQuantitiesOnPlans(position.QuantitiesOnPlans, unit)">@position.QuantityOnPlans @position.Unit</a>
+                </td>
+                <td>
+                    @UpdateNumberOfChanges(position)
+                </td>
+                <td>
+                    <input type="number" class="form-control form-small" @bind="position.QuantityNetto">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-small" value="@position.LampshadeNorm.QuantityPerChange" @oninput="@(e => UpdateQuantityPerChange(position.LampshadeNorm.Id, e.Value!.ToString()!))" min="0">
+                </td>
+                @* <td> *@
+                @*     <input type="date" class="form-control form-small" @bind="position.ExecutionDate"> *@
+                @* </td> *@
+                <td>
+                    <input type="text" class="form-control form-small" @bind="position.CustomerLampshadeNumber">
+                </td>
+                <td>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control form-small" @bind="position.Remarks">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#remarksModal" @onclick="() => EditRemarks(position)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pen" viewBox="0 0 16 16">
+                                <path d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001m-.644.766a.5.5 0 0 0-.707 0L1.95 11.756l-.764 3.057 3.057-.764L14.44 3.854a.5.5 0 0 0 0-.708z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="form-control form-small" @bind="position.LampshadeNorm.MethodOfPackaging">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-small" @bind="position.LampshadeNorm.QuantityPerPack">
+                </td>
+            </tr>
+        }
+    </table>
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+</form>
+
+<div class="modal fade" id="remarksModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="remarksModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Uwagi</h1>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" @bind="selectedPosition.Remarks"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="ResetRemark">Zresetuj</button>
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">Potwierdzenie zapisu</h5>
+            </div>
+            <div class="modal-body">
+                Czy na pewno chcesz zapisać zmiany?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Powrót</button>
+                <button type="button" class="btn btn-primary" @onclick="ConfirmSaveChanges">Zapisz</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<QuantitiesInStock @ref="quantitiesInStockComponent" />
+<QuantitiesOnPlans @ref="quantitiesOnPlansComponent" />
+
+@code {
+    [Parameter] public int prodOrderId { get; set; }
+
+    private GetProductionOrder? prodOrder;
+    private List<ProductWarehouseStocks> productWarehousesStocks = [];
+    private QuantitiesInStock quantitiesInStockComponent;
+    private QuantitiesOnPlans quantitiesOnPlansComponent;
+    private const string unit = "szt.";
+    private GetProductionOrderPosition selectedPosition = new();
+    private string selectedRemark = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (prodOrderId < 1)
+        {
+            NavManager.NavigateTo("/productionOrders");
+            return;
+        }
+
+        prodOrder = await ProductionOrderService.GetProductionOrder(prodOrderId);
+
+        if (prodOrder != null)
+        {
+            await LoadWarehouseQuantities();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (prodOrder == null)
+        {
+            return;
+        }
+
+        var updateProductionOrder = new UpdateProductionOrder
+        {
+            Positions = prodOrder.Positions!.Select(position => new UpdateProductionOrderPosition
+            {
+                Id = position.Id,
+                QuantityNetto = position.QuantityNetto,
+                NumberOfChanges = position.NumberOfChanges,
+                QuantityPerChange = position.LampshadeNorm.QuantityPerChange,
+                ExecutionDate = position.ExecutionDate,
+                QuantityMade = position.QuantityMade,
+                CustomerLampshadeNumber = position.CustomerLampshadeNumber,
+                Remarks = position.Remarks,
+                MethodOfPackaging = position.LampshadeNorm.MethodOfPackaging,
+                QuantityPerPack = position.LampshadeNorm.QuantityPerPack
+            }).ToList()
+        };
+
+        var resp = await ProductionOrderService.UpdateProductionOrderAsync(prodOrderId, updateProductionOrder);
+
+        if (resp)
+        {
+            NavManager.NavigateTo("/productionOrders");
+        }
+    }
+
+    private async Task LoadWarehouseQuantities()
+    {
+        var productIds = prodOrder!.Positions!.Select(p => p.ProductId).ToList();
+        var stockRequest = new StockRequest
+        {
+            ProductIds = productIds,
+            WarehouseIds = [1, 7, 8, 9, 11, 12]
+        };
+        var stockResponse = await OrderService.GetStockAsync(stockRequest);
+        if (stockResponse != null)
+        {
+            productWarehousesStocks = stockResponse.ProductWarehousesStocks;
+
+            Console.WriteLine("productWarehousesStocks:");
+            foreach (var productWarehouseStock in productWarehousesStocks)
+            {
+                Console.WriteLine($"ProductId: {productWarehouseStock.ProductId}, Quantity: {productWarehouseStock.Quantity}");
+            }
+        }
+    }
+
+    private void UpdateQuantityPerChange(int lampshadeNormId, string newValue)
+    {
+        if (!int.TryParse(newValue, out var newQuantityPerChange)) return;
+
+        foreach (var position in prodOrder!.Positions!.Where(position => position.LampshadeNorm.Id == lampshadeNormId))
+        {
+            position.LampshadeNorm.QuantityPerChange = newQuantityPerChange;
+        }
+    }
+    
+    private void EditRemarks(GetProductionOrderPosition position)
+    {
+        selectedRemark = position.Remarks;
+        selectedPosition = position;
+    }
+
+    private void ResetRemark()
+    {
+        selectedPosition.Remarks = selectedRemark;
+    }
+
+    private async Task OpenConfirmationModal()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "var modal = new bootstrap.Modal(document.getElementById('confirmationModal')); modal.show();");
+    }
+
+    private async Task ConfirmSaveChanges()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "var modal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal')); modal.hide();");
+        await HandleSubmit();
+    }
+
+    private static string UpdateNumberOfChanges(GetProductionOrderPosition position)
+    {
+        if (position.LampshadeNorm.QuantityPerChange == 0)
+        {
+            return string.Empty;
+        }
+
+        position.NumberOfChanges =
+            Math.Ceiling((decimal)position.QuantityNetto /
+                position.LampshadeNorm.QuantityPerChange * 2) / 2;
+
+        return position.NumberOfChanges.ToString() ?? string.Empty;
+    }
+}

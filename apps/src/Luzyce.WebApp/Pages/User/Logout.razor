@@ -1,0 +1,16 @@
+@page "/logout"
+@using Luzyce.WebApp.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavManager
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        var customAuthStateProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
+        await customAuthStateProvider.UpdateAuthenticationState(null); // Clear the token or set to null
+        NavManager.NavigateTo("/login", forceLoad: true);
+    }
+
+}

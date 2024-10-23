@@ -1,0 +1,49 @@
+div {
+    width: 230px;
+    outline: 1px solid black;
+    padding: 20px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+
+div > h5 {
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+div > input[type=number] {
+    padding: 3px;
+    border-radius: 3px;
+    border: 1px solid black;
+    margin-bottom: 8px;
+}
+
+.diagram-node {
+    border: 1px solid;
+    width: 230px
+}
+
+.diagram-node > div {
+    padding: 10px;
+}
+
+::deep .diagram-port {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: black;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+::deep .diagram-port.right {
+    border-bottom-right-radius: 50%;
+    border-top-right-radius: 50%;
+    right: -15px;
+}
+
+::deep .diagram-port.left {
+    border-bottom-left-radius: 50%;
+    border-top-left-radius: 50%;
+    left: -5px;
+}

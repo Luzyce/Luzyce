@@ -1,0 +1,84 @@
+﻿@page "/"
+@using System.Security.Claims
+@inject Blazored.LocalStorage.ILocalStorageService localStorageService
+@using System.IdentityModel.Tokens.Jwt
+
+@if (token == null)
+{
+    <Loader @ref="loader"/>
+    return;
+}
+
+<div class="background-image">
+    <div class="page-content">
+        <div class="mt-5">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center">
+                        <img src="logoLuzyce.png" alt="Luzyce" style="width: 100%; max-width: 300px;" />
+                        <br><br>
+                        <h3 style="font-weight: bold;">Witamy w systemie Huty Szkła Łużyce</h3>
+                        <h4 style="font-weight: bold;">Jesteś zalogowany jako: @name</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .background-image {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('pictureLuzyce.png') no-repeat center center fixed;
+        background-size: cover;
+        z-index: -1;
+        overflow: hidden;
+    }
+
+    .page-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        z-index: 1;
+        position: relative;
+    }
+
+    .card {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        background-color: rgba(238, 17, 120, 0.64);
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-body {
+        text-align: center;
+    }
+</style>
+
+@code {
+    private string? token;
+    private string? name;
+    private Loader? loader;
+
+    protected override async Task OnInitializedAsync()
+    {
+        token = await localStorageService.GetItemAsStringAsync("token");
+        if (token != null)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+
+            name = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value
+                   + " "
+                   + jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value;
+        }
+    }
+
+}

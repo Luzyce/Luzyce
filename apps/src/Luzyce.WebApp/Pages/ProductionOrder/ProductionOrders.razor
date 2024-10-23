@@ -1,0 +1,76 @@
+﻿@page "/productionOrders"
+@using System.Globalization
+@using Luzyce.Core.Models.DocumentDependencyChart
+@using Luzyce.Core.Models.ProductionOrder
+@using Luzyce.WebApp.Services
+@inject ProductionOrderService ProductionOrderService
+
+@if (productionOrders == null)
+{
+<p>
+    <em>Ładowanie...</em>
+</p>
+return;
+}
+
+<div class="d-grid gap-2 d-md-flex justify-content-md-end">
+    <a class="btn btn-primary" href="@("productionOrder/new")">Nowe Zlecenie Produkcji</a>
+</div>
+
+<table class="table">
+    <thead>
+    <tr>
+        <th>Data Zam (Subiekt)</th>
+        <th>Numer ZK</th>
+        <th>Nazwa Klienta</th>
+        <th>Data Zlec</th>
+        <th>Numer ZP</th>
+        <th>Termin Realizacji</th>
+        <th>Status</th>
+        <th colspan="2">Akcje</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var productionOrder in productionOrders.ProductionOrders)
+    {
+        <tr>
+            <td>@productionOrder.OrderDate.ToString("d", new CultureInfo("pl-PL"))</td>
+            <td>@productionOrder.OrderNumber</td>
+            <td>@productionOrder.CustomerName</td>
+            <td>@productionOrder.ProdOrderDate.ToString("d", new CultureInfo("pl-PL"))</td>
+            <td>@productionOrder.ProdOrderNumber</td>
+            <td>@productionOrder.DeliveryDate?.ToString("d", new CultureInfo("pl-PL"))</td>
+            <td>@productionOrder.Status.Name</td>
+            @* <td>@productionOrder.Id</td> *@
+            @* <td>@productionOrder.Number</td> *@
+            <td>
+                <a class="btn btn-primary btn-sm" href="@($"productionOrder/edit/{productionOrder.Id}")">Edytuj</a>
+            </td>
+            <td>
+                <a type="button" class="btn btn-primary btn-sm" @onclick="() => ShowDependencyChart(productionOrder.Id)">Wykres zależności</a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (request != null)
+{
+    <DocumentDependencyChart Request="@request"/>
+}
+
+@code {
+    private GetProductionOrdersResponse? productionOrders;
+    private GetDocumentDependencyChartRequest? request;
+
+    protected override async Task OnInitializedAsync()
+    {
+       productionOrders = await ProductionOrderService.GetProductionOrders();
+    }
+
+    private Task ShowDependencyChart(int productionOrderId)
+    {
+        request = new GetDocumentDependencyChartRequest { DocumentId = productionOrderId, DocumentType = "Zlecenie produkcji" };
+        return Task.CompletedTask;
+    }
+}

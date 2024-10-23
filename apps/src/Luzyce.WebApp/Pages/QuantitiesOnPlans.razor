@@ -1,0 +1,69 @@
+﻿@using System.Globalization
+@using Luzyce.Core.Models.ProductionOrder
+
+@if (!visible)
+{
+    return;
+}
+
+<div class="modal fade show" id="stockModal" tabindex="-1" aria-labelledby="stockModalLabel" aria-hidden="true" style="display: block">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="stockModalLabel">Ilości na planach</h1>
+                <button type="button" class="btn-close" @onclick="@(() => visible = false)" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Ilość Na Planie</th>
+                        <th>Ilość Netto</th>
+                        <th>Braki</th>
+                        <th>Ilość Do Sprawdzenia</th>
+                        <th>Data</th>
+                        <th>Zmiana</th>
+                        <th>Zespół</th>
+                        <th>Numer kwita</th>
+                        <th>Akcje</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var quantityOnPlan in quantityOnPlans)
+                    {
+                    <tr>
+                        <td>@quantityOnPlan.Quantity @selectedUnit</td>
+                        <td>@quantityOnPlan.QuantityNetto @selectedUnit</td>
+                        <td>@quantityOnPlan.QuantityLoss @selectedUnit</td>
+                        <td>@quantityOnPlan.QuantityToImprove @selectedUnit</td>
+                        <td>@quantityOnPlan.Date.ToString("d", new CultureInfo("pl-PL"))</td>
+                        <td>@quantityOnPlan.Shift</td>
+                        <td>@quantityOnPlan.Team</td>
+                        <td>@quantityOnPlan.KwitName</td>
+                        <td>
+                            <a type="button" class="btn btn-primary" href="/productionPlan/editKwit?dateString=@quantityOnPlan.Date.ToString("yyyy-MM-dd")&shift=@quantityOnPlan.Shift&team=@quantityOnPlan.Team&kwitId=@quantityOnPlan.KwitId">Otwórz</a>
+                        </td>
+                    </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<GetQuantityOnPlan> quantityOnPlans = [];
+    private string selectedUnit = string.Empty;
+    private bool visible;
+
+    public Task ShowQuantitiesOnPlans(List<GetQuantityOnPlan> getQuantityOnPlans, string unit)
+    {
+        quantityOnPlans = getQuantityOnPlans;
+        selectedUnit = unit;
+        visible = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+}

@@ -1,0 +1,25 @@
+﻿@using Blazor.Diagrams.Core.Models
+@using Blazor.Diagrams.Core.Models.Base
+
+<div style="background-color: #eee; padding: 5px;">
+    @if (Control.Positions != null)
+    {
+        <ul>
+            @foreach (var position in Control.Positions)
+            {
+                <li>@position</li>
+            }
+        </ul>
+    }
+</div>
+
+@code
+{
+    [Parameter]
+    public NodeInformationControl Control { get; set; } = null!;
+
+    [Parameter]
+    public Model Model { get; set; } = null!;
+
+    private NodeModel Node => (Model as NodeModel)!;
+}

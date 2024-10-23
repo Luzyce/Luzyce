@@ -26,6 +26,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E04B0B60
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luzyce.Api", "apps\src\Luzyce.Api\Luzyce.Api.csproj", "{CAF4F9A2-CE4C-4955-A450-2F43B68A1017}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Solution items", "_Solution items", "{3773A83A-FFB0-4CBC-AA1A-53FA97355F66}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luzyce.WebApp", "apps\src\Luzyce.WebApp\Luzyce.WebApp.csproj", "{EE0CF165-E184-42AA-9B1C-20E0E7DA4428}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +51,7 @@ Global
 		{3B28EA9C-1E80-47D7-AFF7-5E7BE920E672} = {00855A9A-B43E-404D-A48E-072891AF8139}
 		{E04B0B60-DDAD-4510-92FA-E1F0C4EA6364} = {8BFF9E80-986D-4FFD-8862-D676B4BDA08D}
 		{CAF4F9A2-CE4C-4955-A450-2F43B68A1017} = {702F9775-3649-4FD5-8CD9-33E1BB72BC65}
+		{EE0CF165-E184-42AA-9B1C-20E0E7DA4428} = {702F9775-3649-4FD5-8CD9-33E1BB72BC65}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{67FDD009-6265-43F3-9ABF-3BB45EE56B96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -73,5 +82,9 @@ Global
 		{CAF4F9A2-CE4C-4955-A450-2F43B68A1017}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CAF4F9A2-CE4C-4955-A450-2F43B68A1017}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CAF4F9A2-CE4C-4955-A450-2F43B68A1017}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE0CF165-E184-42AA-9B1C-20E0E7DA4428}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE0CF165-E184-42AA-9B1C-20E0E7DA4428}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE0CF165-E184-42AA-9B1C-20E0E7DA4428}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE0CF165-E184-42AA-9B1C-20E0E7DA4428}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

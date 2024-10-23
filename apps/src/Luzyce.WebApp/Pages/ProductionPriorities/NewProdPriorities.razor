@@ -1,0 +1,356 @@
+﻿@page "/productionPriority/new"
+@using System.Globalization
+@using Luzyce.Core.Models.ProductionOrder
+@using Luzyce.Core.Models.ProductionPlan
+@using Luzyce.Core.Models.ProductionPriority
+@using Luzyce.WebApp.Pages.ProductionPlan
+@using Luzyce.WebApp.Services
+@inject ProdPrioritiesService ProdPrioritiesService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+
+@if (getOrdersPositionsResponse == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+    return;
+}
+
+@if (Date != default && Shift != 0 && Team != 0)
+{
+    <div class="alert alert-warning" role="alert">
+        Wybierasz pozycję dla @DateStringPressed Zmiana: @Shift Zespół: @Team
+    </div>
+}
+
+<style>
+    .highlighted td {
+        background-color: #FFCCCE;
+    }
+</style>
+
+<div id="alertPlaceholder"></div>
+<div id="sortable-table">
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">Klosz/wersja</th>
+            <th scope="col">ilość zlec</th>
+            <th scope="col">ilość na planach</th>
+            <th scope="col">ilość/wzm</th>
+            <th scope="col">wzm</th>
+            <th scope="col">nr zlecenia</th>
+            <th scope="col">Klient</th>
+            <th scope="col">Uwagi</th>
+            <th scope="col">Dodaj</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in getOrdersPositionsResponse.OrdersPositions)
+        {
+            <tr data-id="@item.Id" data-code="@item.Lampshade.Code" data-variant="@item.LampshadeNorm.Variant.Name">
+                <td>@item.Lampshade.Code @item.LampshadeNorm.Variant.Name @item.LampshadeDekor</td>
+                <td>@item.QuantityNetto @item.Unit</td>
+                <td>
+                    <a type="button" class="btn" @onclick="() => quantitiesOnPlansComponent.ShowQuantitiesOnPlans(item.QuantitiesOnPlans, unit)">@item.QuantityOnPlans @item.Unit</a>
+                </td>
+                <td>@item.LampshadeNorm.QuantityPerChange @item.Unit</td>
+                <td>@item.NumberOfChanges.ToString()!.TrimEnd('0').TrimEnd(',').TrimEnd('.')</td>
+                <td>@item.ProductionOrderNumber</td>
+                <td>@item.Client</td>
+                <td>@if (item.Remarks.Length > 20)
+                    {
+                        <a type="button" class="btn" data-bs-toggle="modal" data-bs-target="#remarkModal" @onclick="() => OpenRemark(item)">
+                            @($"{item.Remarks[..20]}...")
+                        </a>
+                    }
+                    else
+                    {
+                        @item.Remarks
+                    }
+                </td>
+                <td style="width: 80px">
+                    <input type="number" class="form-control form-control-sm" min="0" @oninput="(e) => OnPositionInput(item.Id, e)">
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div style="float: right;">
+    <button class="btn btn-primary" @onclick="CheckParametersAndHandleClick" disabled="@IsAddButtonDisabled">Dodaj pozycje do planu prod</button>
+    @* <button class="btn btn-primary" @onclick="OnSave">Zapisz</button> *@
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmationModal">
+        Zapisz
+    </button>
+</div>
+
+<div class="modal fade" id="calendarModal" tabindex="-1" aria-labelledby="calendarModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="calendarModalLabel">Dodawanie pozycji do planu prod</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <ProductionPlansCalendar @ref="productionPlansCalendar" OnItemClick="HandleItemClick"/>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="remarkModal" tabindex="-1" aria-labelledby="remarkModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Uwaga</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <textarea readonly="readonly" class="form-control" id="exampleFormControlTextarea1" rows="3" @bind="selectedRemark"></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationModalLabel">Potwierdzenie zapisu</h5>
+            </div>
+            <div class="modal-body">
+                Czy na pewno chcesz zapisać zmiany?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Powrót</button>
+                <button type="button" class="btn btn-primary" @onclick="OnSave">Zapisz</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.initializeSortable = (dotNetHelper) => {
+        const tableBody = document.querySelector('#sortable-table tbody');
+        if (tableBody) {
+            new Sortable(tableBody, {
+                animation: 150,
+                onEnd: (evt) => {
+                    dotNetHelper.invokeMethodAsync('SortList', [...evt.to.rows].map(row => parseInt(row.dataset.id)));
+                }
+            });
+
+            tableBody.addEventListener('mouseover', (event) => {
+                if (event.target.tagName === 'TD') {
+                    const tr = event.target.closest('tr');
+                    if (tr) {
+                        const code = tr.dataset.code;
+                        const variant = tr.dataset.variant;
+                        document.querySelectorAll('#sortable-table tbody tr').forEach(row => {
+                            if (row.dataset.code === code && row.dataset.variant === variant) {
+                                row.classList.add('highlighted');
+                            }
+                        });
+                    }
+                }
+            });
+
+            tableBody.addEventListener('mouseout', (event) => {
+                if (event.target.tagName === 'TD') {
+                    const tr = event.target.closest('tr');
+                    if (tr) {
+                        const code = tr.dataset.code;
+                        const variant = tr.dataset.variant;
+                        document.querySelectorAll('#sortable-table tbody tr').forEach(row => {
+                            if (row.dataset.code === code && row.dataset.variant === variant) {
+                                row.classList.remove('highlighted');
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    };
+
+    window.openModal = () => {
+        const modalElement = document.getElementById('calendarModal');
+        if (modalElement) {
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (!modalInstance) {
+                const newModalInstance = new bootstrap.Modal(modalElement);
+                newModalInstance.show();
+            } else {
+                modalInstance.show();
+            }
+        }
+    };
+    
+    window.closeModal = () => {
+        const modalElement = document.getElementById('calendarModal');
+        if (modalElement) {
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            } else {
+                const newModalInstance = new bootstrap.Modal(modalElement);
+                newModalInstance.hide();
+            }
+        }
+    };
+
+    window.showAlert = (message, type) => {
+        const alertPlaceholder = document.getElementById('alertPlaceholder');
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+        alertPlaceholder.append(wrapper);
+    };
+
+    window.closeModalById = (modalId) => {
+        const modalElement = document.getElementById(modalId);
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    };
+</script>
+
+<QuantitiesOnPlans @ref="quantitiesOnPlansComponent" />
+
+@code {
+    [Parameter] [SupplyParameterFromQuery] public string DateString { get; set; } = string.Empty;
+
+    [Parameter] [SupplyParameterFromQuery] public int Shift { get; set; }
+
+    [Parameter] [SupplyParameterFromQuery] public int Team { get; set; }
+
+    private DateOnly? Date => !string.IsNullOrEmpty(DateString)
+        ? DateOnly.ParseExact(DateString, "yyyy-MM-dd")
+        : null;
+    private string? DateStringPressed => Date?.ToString("d", new CultureInfo("pl-PL"));
+
+    private GetOrdersPositionsResponse? getOrdersPositionsResponse;
+    private readonly SortedList<int, GetProductionOrderPosition> sortedList = new();
+    private readonly Dictionary<int, int> productionOrdersPositions = new();
+    private ProductionPlansCalendar productionPlansCalendar = new ProductionPlansCalendar();
+    private string selectedRemark = string.Empty;
+    private QuantitiesOnPlans quantitiesOnPlansComponent;
+    private const string unit = "szt.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        getOrdersPositionsResponse = await ProdPrioritiesService.GetOrdersPositions();
+        for (var i = 0; i < getOrdersPositionsResponse!.OrdersPositions.Count; i++)
+        {
+            sortedList.Add(i * 10, getOrdersPositionsResponse.OrdersPositions[i]);
+        }
+
+        await InvokeAsync(StateHasChanged);
+        await JSRuntime.InvokeVoidAsync("initializeSortable", DotNetObjectReference.Create(this));
+    }
+
+    [JSInvokable]
+    public async Task SortList(int[] sortedIds)
+    {
+        if (getOrdersPositionsResponse == null) return;
+
+        sortedList.Clear();
+
+        for (var i = 0; i < sortedIds.Length; i++)
+        {
+            var item = getOrdersPositionsResponse.OrdersPositions.FirstOrDefault(x => x.Id == sortedIds[i]);
+            if (item != null)
+            {
+                sortedList.Add(i * 10, item);
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnSave()
+    {
+        var resp = await ProdPrioritiesService.SaveProductionPriority(new UpdateProductionPrioritiesRequest
+        {
+            Positions = sortedList.Values.ToList()
+        });
+
+        if (resp)
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "Zapisano pomyślnie!", "success");
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("showAlert", "Wystąpił błąd podczas zapisywania.", "danger");
+        }
+        await JSRuntime.InvokeVoidAsync("closeModalById", "confirmationModal");
+    }
+
+
+    private void OnPositionInput(int positionId, ChangeEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(e.Value?.ToString()))
+        {
+            return;
+        }
+
+        var isValid = int.TryParse(e.Value?.ToString(), out var newQuantity);
+
+        if (isValid && newQuantity >= 0)
+        {
+            if (newQuantity != 0)
+            {
+                productionOrdersPositions[positionId] = newQuantity;
+            }
+            else
+            {
+                productionOrdersPositions.Remove(positionId);
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    private bool IsAddButtonDisabled => productionOrdersPositions.Count == 0;
+
+    private async Task CheckParametersAndHandleClick()
+    {
+        if (Date != default && Shift != 0 && Team != 0 && Date != null)
+        {
+            await HandleItemClick((DateOnly.ParseExact(DateString, "yyyy-MM-dd"), Shift, Team));
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("openModal");
+        }
+    }
+
+
+    private async Task HandleItemClick((DateOnly date, int shift, int team) item)
+    {
+        var (date, shift, team) = item;
+        var addPositionsToProductionPlan = new AddPositionsToProductionPlan
+        {
+            Date = date,
+            Shift = shift,
+            Team = team,
+            Positions = productionOrdersPositions
+        };
+
+        await ProdPrioritiesService.AddPositionsToProductionPlanAsync(addPositionsToProductionPlan);
+        await JSRuntime.InvokeVoidAsync("closeModal");
+        NavigationManager.NavigateTo($"/productionPlan?dateString={date.ToString("yyyy-MM-dd")}&shift={shift}&team={team}");
+    }
+
+    private void OpenRemark(GetProductionOrderPosition position)
+    {
+        selectedRemark = position.Remarks;
+    }
+}

@@ -1,0 +1,39 @@
+﻿@using Luzyce.WebApp.Layout
+@using Luzyce.WebApp.Redirects
+@using Luzyce.WebApp.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@inject TokenRefreshService TokenRefreshService
+
+
+<CascadingAuthenticationState>
+    <AuthorizeView>
+        <NotAuthorized>
+            <LoginRedirect />
+        </NotAuthorized>
+    </AuthorizeView>
+</CascadingAuthenticationState>
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1"/>
+    </Found>
+    <NotFound>
+        <PageTitle>Not found</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p role="alert">Sorry, there's nothing at this address.</p>
+        </LayoutView>
+    </NotFound>
+</Router>
+
+@code {
+    protected override void OnInitialized()
+    {
+        TokenRefreshService.Start();
+    }
+    
+    public async ValueTask DisposeAsync()
+    {
+        await TokenRefreshService.DisposeAsync();
+    }
+}

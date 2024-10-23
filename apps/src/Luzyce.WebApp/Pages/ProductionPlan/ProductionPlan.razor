@@ -1,0 +1,321 @@
+﻿@page "/productionPlan"
+@using System.Globalization
+@using Append.Blazor.Printing
+@using Luzyce.Core.Models.DocumentDependencyChart
+@using Luzyce.Core.Models.ProductionPlan
+@using Luzyce.Core.Models.User
+@using Luzyce.WebApp.Services
+@inject ProductionPlanService ProductionPlanService
+@inject NavigationManager NavigationManager
+@inject IPrintingService PrintingService
+@inject IConfiguration Configuration
+
+@if (ShiftSupervisors == null || HeadsOfMetallurgicalTeams == null)
+{
+    <p>
+        <em>Ładowanie...</em>
+    </p>
+    return;
+}
+
+@if (GetProductionPlanPositions == null || GetProductionPlanPositions.ProductionPlanPositions.Count == 0)
+{
+    <h3>Brak pozycji w planie produkcji</h3>
+    <a class="btn btn-primary" href="/productionPriority/new?dateString=@Date.ToString("yyyy-MM-dd")&shift=@Shift&team=@Team" role="button">Dodaj pozycje</a>
+    return;
+}
+
+<h3>@DateStringPressed Zmiana: @Shift Zespół: @Team</h3>
+
+<div class="w-50 p-3 row">
+    <div class="col">
+        <label>Hutmistrz:</label>
+        <select class="form-control" @bind="ShiftSupervisorId">
+            <option value="" selected="selected">&nbsp;</option>
+            @foreach (var shiftSupervisor in ShiftSupervisors)
+            {
+                <option value="@shiftSupervisor.Id">
+                    @shiftSupervisor.Id - @shiftSupervisor.Name @shiftSupervisor.LastName
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col">
+        <label>Warsztat hutnika:</label>
+        <select class="form-control" @bind="HeadsOfMetallurgicalTeamsId">
+            <option value="">&nbsp;</option>
+            @foreach (var headsOfMetallurgicalTeams in HeadsOfMetallurgicalTeams)
+            {
+                <option value="@headsOfMetallurgicalTeams.Id">
+                    @headsOfMetallurgicalTeams.Id - @headsOfMetallurgicalTeams.Name @headsOfMetallurgicalTeams.LastName
+                </option>
+            }
+        </select>
+    </div>
+    <div class="col">
+        <label>Uwagi:</label>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control form-small" @bind="GetProductionPlanPositions.Remarks">
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editRemarksModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pen" viewBox="0 0 16 16">
+                    <path d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001m-.644.766a.5.5 0 0 0-.707 0L1.95 11.756l-.764 3.057 3.057-.764L14.44 3.854a.5.5 0 0 0 0-.708z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="sortable-table">
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">Asortyment</th>
+            <th scope="col">Wersja wykonania</th>
+            <th scope="col">Ilość godz</th>
+            <th scope="col">Ilość [szt]</th>
+            <th scope="col">Waga netto [kg]</th>
+            <th scope="col">Waga brutto [kg]</th>
+            <th scope="col">Norma</th>
+            <th scope="col" style="width: 11%">Dla firmy/mag.</th>
+            <th scope="col">Uwagi</th>
+            <th scope="col">Nr Kwitu</th>
+            <th colspan="3">Akcje</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var item in GetProductionPlanPositions.ProductionPlanPositions)
+        {
+            <tr data-id="@item.Id" data-code="@item.DocumentPosition.Lampshade.Code" data-variant="@item.DocumentPosition.LampshadeNorm.Variant.Name">
+                <td>@item.DocumentPosition.Lampshade.Code</td>
+                <td>@item.DocumentPosition.LampshadeNorm.Variant.Name @item.DocumentPosition.LampshadeDekor</td>
+                <td>
+                    <span>@CalculateHours(item.Quantity, item.DocumentPosition.LampshadeNorm.QuantityPerChange)</span>
+                    @if (item.DocumentPosition.LampshadeNorm.QuantityPerChange == 0)
+                    {
+                        <span>
+                            @CalculateHours(item.Quantity, item.DocumentPosition.LampshadeNorm.QuantityPerChange)
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="red" class="bi bi-exclamation-triangle-fill ml-2" viewBox="0 0 16 16">
+                                <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+                            </svg>
+                        </span>
+                    }
+                </td>
+                <td>
+                    <input type="number" class="form-control" @bind="item.Quantity">
+                </td>
+                <td>
+                    <input type="number" class="form-control" step="0.01" @bind="item.DocumentPosition.LampshadeNorm.WeightNetto">
+                </td>
+                <td>
+                    <input type="number" class="form-control" step="0.01" @bind="item.DocumentPosition.LampshadeNorm.WeightBrutto">
+                </td>
+                <td>
+                    <input type="number" class="form-control @(item.DocumentPosition.LampshadeNorm.QuantityPerChange == 0 ? "bg-danger" : "")"
+                           @bind="item.DocumentPosition.LampshadeNorm.QuantityPerChange">
+                </td>
+                <td>@item.DocumentPosition.Client</td>
+                <td>
+                    <span style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#remarksModal" @onclick="() => OpenRemark(item)">
+                        @(item.DocumentPosition.Remarks.Length > 20
+                            ? item.DocumentPosition.Remarks[..20]
+                            : item.DocumentPosition.Remarks)
+                    </span>
+                </td>
+                <td>@item.Kwit?.Number</td>
+                <td>
+                    <a class="btn btn-primary btn-sm" href="@($"/productionPlan/editKwit?dateString={Date.ToString("yyyy-MM-dd")}&shift={Shift}&team={Team}&kwitId={item.Kwit?.Id}")">Edytuj</a>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="@(() => PrintingService.Print(Configuration["apiUrl"] + "/api/productionPlan/kwit-" + item.Kwit.Id + ".pdf"))">
+                        Wydrukuj
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-danger btn-sm" @onclick="() => DeletePosition(item.Id)">Usuń</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+        <tfoot>
+        <tr>
+            <td colspan="2">
+                <strong>Razem:</strong>
+            </td>
+            <td>
+                <strong>@TotalHours</strong>
+            </td>
+            <td colspan="9"></td>
+        </tr>
+        </tfoot>
+    </table>
+</div>
+
+
+<a class="btn btn-secondary" href="/productionPlans" role="button">Powrót</a>
+<div style="float: right">
+    <a class="btn btn-primary" href="/productionPriority/new?dateString=@DateString&shift=@Shift&team=@Team" role="button">Dodaj pozycje</a>
+    <a type="button" class="btn btn-primary" @onclick="() => ShowDependencyChart(GetProductionPlanPositions.Id)">Wykres zależności</a>
+    <a class="btn btn-primary" href="/productionPlans" role="button" @onclick="OnSave">Zapisz</a>
+</div>
+
+<div class="modal fade" id="remarksModal" tabindex="-1" aria-labelledby="remarksModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Uwagi</h1>
+                <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="word-wrap: break-word; white-space: normal">
+                @selectedPosition.DocumentPosition.Remarks
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editRemarksModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="editRemarksModal" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5">Uwagi</h1>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control" id="exampleFormControlTextarea1" rows="3" @bind="GetProductionPlanPositions.Remarks"></textarea>
+            </div>
+            <div class="modal-footer">
+                @* <button type="button" class="btn btn-secondary" @onclick="ResetRemark">Zresetuj</button> *@
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Zamknij</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (request != null)
+{
+    <DocumentDependencyChart Request="@request"/>
+}
+
+@code {
+    [Parameter] [SupplyParameterFromQuery] public required string DateString { get; set; }
+
+    [Parameter] [SupplyParameterFromQuery] public int Shift { get; set; }
+
+    [Parameter] [SupplyParameterFromQuery] public int Team { get; set; }
+
+    private DateOnly Date => DateOnly.ParseExact(DateString, "yyyy-MM-dd");
+    private string DateStringPressed => Date.ToString("d", new CultureInfo("pl-PL"));
+    private GetProductionPlan? GetProductionPlanPositions { get; set; }
+    private List<GetUserResponseDto>? ShiftSupervisors;
+    private int? ShiftSupervisorId { get; set; }
+    private int? HeadsOfMetallurgicalTeamsId { get; set; }
+    private List<GetUserResponseDto>? HeadsOfMetallurgicalTeams { get; set; }
+    private GetProductionPlanPosition selectedPosition = new();
+    private GetDocumentDependencyChartRequest? request;
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetProductionPlanPositions = await ProductionPlanService.GetPositionsAsync(new GetProductionPlanPositionsRequest()
+        {
+            Shift = Shift,
+            Date = Date,
+            Team = Team
+        });
+
+        ShiftSupervisorId = GetProductionPlanPositions?.Shift.ShiftSupervisor?.Id ?? null;
+        HeadsOfMetallurgicalTeamsId = GetProductionPlanPositions?.HeadsOfMetallurgicalTeams?.Id ?? null;
+
+        ShiftSupervisors = await ProductionPlanService.GetShiftSupervisorsAsync();
+        HeadsOfMetallurgicalTeams = await ProductionPlanService.GetHeadsOfMetallurgicalTeamsAsync();
+    }
+
+    private async Task DeletePosition(int id)
+    {
+        await ProductionPlanService.DeletePositionAsync(id);
+        GetProductionPlanPositions = await ProductionPlanService.GetPositionsAsync(new GetProductionPlanPositionsRequest
+        {
+            Shift = Shift,
+            Date = Date,
+            Team = Team
+        });
+        StateHasChanged();
+    }
+
+    private async Task OnSave()
+    {
+        var resp = await ProductionPlanService.UpdateProductionPlan(new UpdateProductionPlan
+        {
+            Id = GetProductionPlanPositions!.Id,
+            ShiftSupervisorId = ShiftSupervisorId,
+            HeadsOfMetallurgicalTeamsId = HeadsOfMetallurgicalTeamsId,
+            Remarks = GetProductionPlanPositions!.Remarks,
+            ProductionPlanPositions = GetProductionPlanPositions!.ProductionPlanPositions
+                .Select(position => new UpdateInfoInProductionPlanPosition
+                {
+                    Id = position.Id,
+                    Quantity = position.Quantity,
+                    NumberOfHours = position.NumberOfHours,
+                    WeightNetto = position.DocumentPosition.LampshadeNorm.WeightNetto,
+                    WeightBrutto = position.DocumentPosition.LampshadeNorm.WeightBrutto,
+                    QuantityPerChange = position.DocumentPosition.LampshadeNorm.QuantityPerChange
+                })
+                .ToList()
+        });
+
+        if (resp)
+        {
+            NavigationManager.NavigateTo("/productionPlans");
+        }
+    }
+
+    private static string CalculateHours(int quantity, int? norma)
+    {
+        if (norma is null or 0) return "";
+
+        var totalHours = quantity / (decimal)norma * 8;
+
+        var hours = (int)totalHours;
+        var minutes = (int)((totalHours - hours) * 60);
+
+        return hours switch
+        {
+            > 0 when minutes > 0 => $"{hours}h {minutes}m",
+            > 0 => $"{hours}h",
+            _ => $"{minutes}m"
+        };
+    }
+
+    private void OpenRemark(GetProductionPlanPosition position)
+    {
+        selectedPosition = position;
+    }
+
+    private string TotalHours
+    {
+        get
+        {
+            var totalHours = GetProductionPlanPositions?.ProductionPlanPositions
+                .Sum(item => item.DocumentPosition.LampshadeNorm.QuantityPerChange > 0
+                    ? item.Quantity / (decimal)item.DocumentPosition.LampshadeNorm.QuantityPerChange * 8
+                    : 0) ?? 0;
+
+            var hours = (int)totalHours;
+            var minutes = (int)((totalHours - hours) * 60);
+
+            return hours switch
+            {
+                > 0 when minutes > 0 => $"{hours}h {minutes}m",
+                > 0 => $"{hours}h",
+                _ => $"{minutes}m"
+            };
+        }
+    }
+
+    private Task ShowDependencyChart(int productionPlanId)
+    {
+        request = new GetDocumentDependencyChartRequest { DocumentId = productionPlanId, DocumentType = "Plan produkcji" };
+        return Task.CompletedTask;
+    }
+
+}

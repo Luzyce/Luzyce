@@ -1,0 +1,221 @@
+﻿@page "/production-plans"
+@using System.Globalization
+@using Luzyce.Core.Models.ProductionPlan
+@using Luzyce.WebApp.Services
+@inject ProductionPlanService ProductionPlanService
+
+@if (DaysOfMonth == null || productionPlans == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+    return;
+}
+
+<style>
+    .production-plans-container .table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .production-plans-container .table th, .production-plans-container .table td {
+        border: 1px solid lightgray;
+        padding: 1px;
+        position: relative;
+        text-align: left;
+        vertical-align: top;
+        white-space: nowrap;
+    }
+
+    .production-plans-container .current-day {
+        border: 3px solid black !important;
+    }
+
+    .production-plans-container .day-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .production-plans-container .day-number {
+        z-index: 100;
+        font-weight: bolder;
+        width: 50px;
+        display: block;
+        position: absolute;
+        text-align: center;
+        top: 1px;
+        left: calc(50% - 25px);
+        font-size: 40px;
+    }
+
+    .production-plans-container .grid-container {
+        display: grid;
+        position: relative;
+        grid-template-columns: repeat(3, 1fr);
+        min-width: 100%;
+        gap: 0;
+        padding: 0;
+        z-index: 200;
+    }
+
+    .production-plans-container .grid-item {
+        border: 1px solid black;
+        display: block;
+        height: 20px;
+        min-width: 33%;
+        margin: 0;
+        opacity: 0.8;
+    }
+
+    .production-plans-container .status-planned {
+        background-color: green;
+    }
+
+    .production-plans-container .status-inprogress {
+        background-color: red;
+    }
+</style>
+
+
+<div class="d-flex justify-content-between mb-3">
+    <span class="btn" @onclick="PreviousMonth"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-left" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+            <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+        </svg></span>
+    <h3>@CurrentDate.ToString("MMMM yyyy", new CultureInfo("pl-PL"))</h3>
+    <span class="btn" @onclick="NextMonth"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-right" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M3.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L9.293 8 3.646 2.354a.5.5 0 0 1 0-.708"/>
+            <path fill-rule="evenodd" d="M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708"/>
+        </svg></span>
+</div>
+
+<div class="production-plans-container">
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">P</th>
+            <th scope="col">W</th>
+            <th scope="col">Ś</th>
+            <th scope="col">C</th>
+            <th scope="col">P</th>
+            <th scope="col">S</th>
+            <th scope="col">N</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var week in DaysOfMonth.GroupBy(d => CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(d, CalendarWeekRule.FirstDay, DayOfWeek.Monday)))
+        {
+            <tr>
+                @for (var i = 1; i <= 7; i++)
+                {
+                    var day = week.FirstOrDefault(d => (int)d.DayOfWeek == i % 7);
+
+                    if (day != default)
+                    {
+                        var isCurrentDay = day.Date == DateTime.Now.Date;
+                        <td class="@(isCurrentDay ? "current-day" : "")">
+                            <div class="day-number">@day.Day</div>
+                            <div class="day-container">
+                                <div class="grid-container">
+                                    @for (var team = 1; team < 4; team++)
+                                    for (var change = 1; change < 4; change++)
+                                    {
+                                        var statusClass = productionPlans?.FirstOrDefault(
+                                                p => p.Date == DateOnly.FromDateTime(day) &&
+                                                     p.Shift.ShiftNumber == change && p.Team == team)?.Status!.Id switch
+                                            {
+                                                1 => "status-inprogress",
+                                                3 => "status-planned",
+                                                _ => ""
+                                            };
+
+                                        var locChange = change;
+                                        var locTeam = team;
+                                        <div class="grid-item @statusClass" @onclick="() => OnGridItemClick(day, locChange, locTeam)">&nbsp;</div>
+                                    }
+                                </div>
+                            </div>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>&nbsp;</td>
+                    }
+                }
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private List<DateTime>? DaysOfMonth { get; set; }
+    public DateTime CurrentDate { get; set; } = DateTime.Now;
+    private List<GetProductionPlanForCalendar>? productionPlans;
+    private DateOnly CurrentDay => DateOnly.FromDateTime(DateTime.Now);
+
+    [Parameter] public EventCallback<(DateOnly date, int change, int team)> OnItemClick { get; set; }
+    [Parameter] public EventCallback OnMonthChanged { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateDaysOfMonth();
+        await LoadProductionPlans();
+    }
+
+    private void UpdateDaysOfMonth()
+    {
+        DaysOfMonth = GetDaysOfMonth(CurrentDate.Year, CurrentDate.Month);
+    }
+
+    private async Task LoadProductionPlans()
+    {
+        var oldProductionPlans = await ProductionPlanService
+            .GetProductionPlansAsync(
+                new GetMonthProductionPlanRequest()
+                {
+                    ProductionPlanDate = new DateOnly(CurrentDate.Year, CurrentDate.Month, 1)
+                });
+
+        if (oldProductionPlans == null)
+        {
+            return;
+        }
+
+        productionPlans = oldProductionPlans.ProductionPlans;
+    }
+
+    private static List<DateTime> GetDaysOfMonth(int year, int month)
+    {
+        var days = new List<DateTime>();
+        var daysInMonth = DateTime.DaysInMonth(year, month);
+
+        for (var day = 1; day <= daysInMonth; day++)
+        {
+            days.Add(new DateTime(year, month, day));
+        }
+
+        return days;
+    }
+
+    private async Task PreviousMonth()
+    {
+        CurrentDate = CurrentDate.AddMonths(-1);
+        UpdateDaysOfMonth();
+        await OnMonthChanged.InvokeAsync();
+        await LoadProductionPlans();
+    }
+
+    private async Task NextMonth()
+    {
+        CurrentDate = CurrentDate.AddMonths(1);
+        UpdateDaysOfMonth();
+        await OnMonthChanged.InvokeAsync();
+        await LoadProductionPlans();
+    }
+
+    private async Task OnGridItemClick(DateTime date, int change, int team)
+    {
+        await OnItemClick.InvokeAsync((DateOnly.FromDateTime(date), change, team));
+    }
+}

@@ -1,0 +1,79 @@
+﻿@page "/productionPlans"
+@using Append.Blazor.Printing
+@inject NavigationManager Navigation
+@inject IPrintingService PrintingService
+@inject IConfiguration Configuration
+
+<style>
+    .legend {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 15px 0;
+        background-color: #f9f9f9;
+    }
+
+    .legend h3 {
+        margin-top: 0;
+    }
+
+    .legend ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+    .legend li {
+        padding: 5px 0;
+    }
+
+    .legend strong {
+        font-weight: bold;
+    }
+</style>
+
+<ProductionPlansCalendar @ref="productionPlansCalendar" OnItemClick="HandleItemClick" OnMonthChanged="UpdateMaxDaysInMonth"/>
+
+<div class="row">
+    <div class="col">
+        <div class="input-group" style="width: 30%">
+            <input type="number" class="form-control" aria-describedby="wydrukuj" min="1" max="@MaxDaysInMonth" @bind="SelectedDay">
+            <button class="btn btn-outline-secondary" type="button" id="wydrukuj" @onclick="PrintProductionPlan">Wydrukuj</button>
+        </div>
+    </div>
+    <div class="col">
+        <div class="legend" style="float: right">
+            <h3>Legenda</h3>
+            <ul>
+                <li><strong>Kolumna</strong>: Zmiana</li>
+                <li><strong>Wiersz</strong>: Zespół</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private ProductionPlansCalendar productionPlansCalendar = new ProductionPlansCalendar();
+    private int SelectedDay { get; set; } = 1;
+
+    private int MaxDaysInMonth => DateTime.DaysInMonth(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month);
+
+    private void UpdateMaxDaysInMonth()
+    {
+        StateHasChanged();
+    }
+
+    private void HandleItemClick((DateOnly date, int shift, int team) item)
+    {
+        var (date, shift, team) = item;
+        Navigation.NavigateTo($"/productionPlan?dateString={date.ToString("yyyy-MM-dd")}&shift={shift}&team={team}");
+    }
+
+    private void PrintProductionPlan()
+    {
+        var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, SelectedDay).ToString("yyyy-MM-dd");
+
+        var url = Configuration["apiUrl"] + $"/api/productionPlan/productionPlan-{selectedDate}.pdf";
+        PrintingService.Print(url);
+    }
+
+}

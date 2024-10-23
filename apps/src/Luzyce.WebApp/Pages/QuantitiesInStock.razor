@@ -1,0 +1,52 @@
+﻿@using Luzyce.Core.Models.Order
+
+@if(!visible)
+{
+    return;
+}
+
+<div class="modal fade show" id="stockModal" tabindex="-1" aria-labelledby="stockModalLabel" aria-hidden="true" style="display: block">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="stockModalLabel">Stany magazynowe</h1>
+                <button type="button" class="btn-close" @onclick="@(() => visible = false)" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Magazyn</th>
+                        <th>Ilość</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var ws in selectedProductWarehouseStock.WarehouseStocks)
+                    {
+                        <tr>
+                            <td>@ws.WarehouseName</td>
+                            <td style="text-align: right;">@ws.Quantity @selectedUnit</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ProductWarehouseStocks selectedProductWarehouseStock = new ProductWarehouseStocks();
+    private string selectedUnit = string.Empty;
+    private bool visible = false;
+
+    public Task ShowStockModal(ProductWarehouseStocks productWarehousesStock, string unit)
+    {
+        selectedProductWarehouseStock = productWarehousesStock;
+        selectedUnit = unit;
+        visible = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+}

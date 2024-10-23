@@ -1,0 +1,76 @@
+@page "/login"
+@inject AuthenticationStateProvider AuthStateProvider
+@inject AccountService AccountService
+@inject NavigationManager NavManager
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using Luzyce.Core.Models.User
+@using Luzyce.WebApp.Services
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            @if (showError)
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                </div>
+            }
+            <div class="card card-pink">
+                <div class="card-body">
+                    <EditForm Model="User" OnValidSubmit="HandleLogin">
+                        <DataAnnotationsValidator/>
+                        <ValidationSummary/>
+
+                        <div class="form-group">
+                            <label for="login">Login</label>
+                            <input @bind="User.Login" class="form-control" type="text" id="login">
+                        </div>
+                        <br>
+                        <div class="form-group">
+                            <label for="password">Hasło</label>
+                            <input @bind="User.Password" class="form-control" type="password" id="password">
+                        </div>
+                        <br>
+                        <div class="form-group d-flex justify-content-between align-items-center">
+                            @if (isLoading)
+                            {
+                            <div class="loader mr-2"></div>
+                            }
+                            <button class="btn btn-primary ml-auto" type="submit" disabled="@isLoading">Zaloguj się</button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public LoginDto User { get; set; } = new LoginDto();
+    private bool showError;
+    private string errorMessage = string.Empty;
+    private bool isLoading = false;
+
+    async Task HandleLogin()
+    {
+        isLoading = true;
+
+        var resp = await AccountService.LoginAccount(User);
+
+        if (!string.IsNullOrEmpty(resp.Token))
+        {
+            var customAuthStateProvider = (CustomAuthenticationStateProvider)AuthStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationState(resp.Token);
+            NavManager.NavigateTo("/");
+        }
+        else
+        {
+            showError = true;
+            errorMessage = "Spróbuj ponownie.";
+        }
+
+        isLoading = false;
+    }
+
+}

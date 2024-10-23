@@ -1,0 +1,217 @@
+@page "/users/edit/{userId:int}"
+@using System.Globalization
+@using Luzyce.Core.Models.Log
+@using Luzyce.Core.Models.User
+@using Luzyce.WebApp.Services
+@inject UserService UserService
+@inject NavigationManager NavManager
+@inject IJSRuntime JSRuntime
+
+@if (user == null || roles == null)
+{
+    <p>
+        <em>Ładowanie...</em>
+    </p>
+    return;
+}
+
+<h1>Edytuj użytkownika</h1>
+<form @onsubmit="HandleSubmit">
+    <div class="row">
+        <div class="col form-group">
+            <label>Imię:</label>
+            <input type="text" class="form-control" id="name" @bind="user.Name">
+        </div>
+        <div class="col form-group">
+            <label>Nazwisko:</label>
+            <input type="text" class="form-control" id="lastName" @bind="user.LastName">
+        </div>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col form-group">
+            <label>Email:</label>
+            <input type="text" class="form-control" id="email" @bind="user.Email">
+        </div>
+        <div class="col form-group">
+            <label>Hash:</label>
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" @bind="user.Hash" @oninput="HashChanged">
+                <button type="button" class="btn btn-outline-secondary" @onclick="GetLogs">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-in-up" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M3.5 10a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 0 0 1h2A1.5 1.5 0 0 0 14 9.5v-8A1.5 1.5 0 0 0 12.5 0h-9A1.5 1.5 0 0 0 2 1.5v8A1.5 1.5 0 0 0 3.5 11h2a.5.5 0 0 0 0-1z"/>
+                        <path fill-rule="evenodd" d="M7.646 4.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 5.707V14.5a.5.5 0 0 1-1 0V5.707L5.354 7.854a.5.5 0 1 1-.708-.708z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+
+    </div>
+    <br>
+    <div class="row">
+        <div class="col form-group">
+            <label>Login:</label>
+            <input type="text" class="form-control" id="login" @bind="user!.Login">
+        </div>
+        <div class="col form-group">
+            <label>Rola:</label>
+            <select class="form-control" @bind="user!.RoleId" disabled="@user.IsLocked">
+                @foreach (var role in roles!)
+                {
+                    <option value="@role.Id">@role.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col">
+            <br>
+            <a class="btn btn-primary" href="@($"users/resetPassword/{user.Id}")">Zresetuj Hasło</a>
+        </div>
+    </div>
+    <br>
+    <button type="submit" class="btn btn-primary">Zapisz</button>
+</form>
+
+
+<div class="modal fade" id="hashModal" tabindex="-1" aria-labelledby="hashModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Przypisz hash</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th scope="col">Data</th>
+                        <th scope="col">Operacja</th>
+                        <th scope="col">Urządzenie</th>
+                        <th scope="col"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @if (logs != null)
+                    {
+                    @foreach (var log in logs.Logs)
+                    {
+                    <tr>
+                        <th scope="row">@TimeAgo(log.Timestamp)</th>
+                        <th scope="row">@log.Operation</th>
+                        <th scope="row">@log.Client?.Name (@log.Client?.IpAddress)</th>
+                        <th scope="row">
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal" @onclick="() => AssignHash(log)">Przypisz</button>
+                        </th>
+                    </tr>
+                    }
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openModal(modalId) {
+        var modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var timestampElements = document.querySelectorAll('th[data-timestamp]');
+
+        timestampElements.forEach(function(element) {
+        var rawTimestamp = element.getAttribute('data-timestamp');
+        var formattedTime = moment(rawTimestamp).fromNow();
+        element.textContent = formattedTime;
+    });
+    });
+
+</script>
+
+@code {
+    [Parameter] public int userId { get; set; }
+
+    private GetUserForUpdateDto? user;
+    private List<GetRoleDto>? roles;
+    private List<GetLog>? assignedLogs;
+    private GetLogs? logs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (userId < 1)
+        {
+            NavManager.NavigateTo("/users");
+            return;
+        }
+
+        user = await UserService.GetUserByIdAsync(userId);
+        roles = await UserService.GetRolesAsync();
+    }
+
+    private async Task GetLogs()
+    {
+        logs = await UserService.GetLogsAsync(1, 15);
+        await JSRuntime.InvokeVoidAsync("openModal", "hashModal");
+    }
+
+    private Task AssignHash(GetLog log)
+    {
+        if (user == null || log.Hash == null)
+        {
+            return Task.CompletedTask;
+        }
+
+        user.Hash = log.Hash;
+        assignedLogs = new List<GetLog> { log };
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (user == null)
+        {
+            return;
+        }
+
+        var userUpdate = new UpdateUserDto
+        {
+            Name = user.Name,
+            LastName = user.LastName,
+            Email = user.Email,
+            Hash = user.Hash,
+            Login = user.Login,
+            RoleId = user.RoleId
+        };
+
+        await UserService.UpdateUserAsync(userUpdate, userId);
+        if (assignedLogs != null)
+        {
+            await UserService.AssignUserAsync(new AssignUserDto { UserId = user.Id, Logs = assignedLogs });
+        }
+        NavManager.NavigateTo("/users");
+    }
+
+    private static string TimeAgo(DateTime dateTime)
+    {
+        var timeSpan = DateTime.Now - dateTime;
+
+        if (timeSpan.TotalMinutes < 1)
+            return "przed chwilą";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes} minut temu";
+
+        return dateTime.ToString("g", new CultureInfo("pl-PL"));
+    }
+
+    private void HashChanged(ChangeEventArgs e)
+    {
+        if (user != null && e.Value?.ToString() != user.Hash && assignedLogs?.First().Hash != user.Hash)
+        {
+            assignedLogs = null;
+        }
+    }
+
+
+}

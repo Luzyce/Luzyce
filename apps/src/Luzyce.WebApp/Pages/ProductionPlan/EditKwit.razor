@@ -1,0 +1,163 @@
+﻿@page "/productionPlan/editKwit"
+@using Luzyce.Core.Models.DocumentDependencyChart
+@using Luzyce.Core.Models.Kwit
+@using Luzyce.WebApp.Services
+@inject NavigationManager NavManager
+@inject ProductionPlanService ProductionPlanService
+
+@if (kwit == null)
+{
+    <Loader @ref="loader"/>
+    return;
+}
+
+<h3>Edycja Kwitu: @kwit.Number</h3>
+<h5>Ilość na Planie Produkcji: @kwit.Quantity</h5>
+
+<div class="row">
+    <div class="col form-group">
+        <label>Ilość Netto:</label>
+        <input type="number" class="form-control" id="quantityNetto" @bind="kwit.QuantityNetto" readonly="@(isReadonly || isLocked)">
+    </div>
+    <div class="col form-group">
+        <label>Braki:</label>
+        <input type="number" class="form-control" id="quantityLoss" @bind="kwit.QuantityLoss" readonly="@(isReadonly || isLocked)">
+    </div>
+    <div class="col form-group">
+        <label>Ilość Do Sprawdzenia:</label>
+        <input type="number" class="form-control" id="quantityToImprove" @bind="kwit.QuantityToImprove" readonly="@(isReadonly || isLocked)">
+    </div>
+</div>
+
+@if (isLocked)
+{
+    <br>
+    <div class="alert alert-warning">
+        Kwit jest zablokowany przez: @kwit.LockedBy?.Name (@kwit.LockedBy?.IpAddress)
+        <button style="float: right" class="btn btn-primary" @onclick="UnlockKwit">Odblokuj Kwit</button>
+    </div>
+}
+
+<br>
+
+<a type="button" class="btn btn-primary" href="/productionPlan?dateString=@DateString&shift=@Shift&team=@Team">Powrót</a>
+
+<div style="float: right">
+    <a type="button" class="btn btn-primary" @onclick="() => ShowDependencyChart(kwit.Id)">Wykres zależności</a>
+    <button class="btn btn-primary" style="margin-right: 10px;" @onclick="UpdateKwit" disabled="@isLocked">Zapisz</button>
+    @if (!isReadonly)
+    {
+        <button class="btn btn-danger" @onclick="CloseKwit" disabled="@isLocked">Zamknij Kwit</button>
+    }
+    else
+    {
+        <button class="btn btn-warning" @onclick="RevertKwit">Przywróć Kwit</button>
+    }
+</div>
+
+@if (kwit.Lacks is not null or { Count: > 0 })
+{
+    <br>
+    <br>
+    <table class="table table-bordered" style="max-width: 400px;">
+        <thead>
+        <tr>
+            <th>Błąd</th>
+            <th>Ilość</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var lack in kwit.Lacks)
+        {
+            <tr>
+                <td>@lack.ErrorName (@lack.ErrorShortName)</td>
+                <td>@lack.Quantity</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@if (request != null)
+{
+    <DocumentDependencyChart Request="@request"/>
+}
+
+@code {
+    [Parameter] [SupplyParameterFromQuery] public required string DateString { get; set; }
+
+    [Parameter] [SupplyParameterFromQuery] public int Shift { get; set; }
+
+    [Parameter] [SupplyParameterFromQuery] public int Team { get; set; }
+
+    [Parameter] [SupplyParameterFromQuery] public int KwitId { get; set; }
+
+    GetKwit? kwit;
+    private Loader? loader;
+    private bool isReadonly;
+    private bool isLocked;
+    private GetDocumentDependencyChartRequest? request;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (KwitId < 1)
+        {
+            NavManager.NavigateTo("/productionPlans");
+            return;
+        }
+
+        kwit = await ProductionPlanService.GetKwit(KwitId);
+
+        if (kwit?.Status?.Name == "Zamknięty")
+        {
+            isReadonly = true;
+        }
+
+        if (kwit?.LockedBy != null)
+        {
+            isLocked = true;
+        }
+    }
+
+    private async Task RevertKwit()
+    {
+        await ProductionPlanService.RevertKwit(KwitId);
+        isReadonly = false;
+    }
+
+    private async Task CloseKwit()
+    {
+        await ProductionPlanService.CloseKwit(KwitId);
+        isReadonly = true;
+    }
+
+    private async Task UnlockKwit()
+    {
+        await ProductionPlanService.UnlockKwit(KwitId);
+        isLocked = false;
+    }
+
+    private async Task UpdateKwit()
+    {
+        if (kwit == null)
+        {
+            return;
+        }
+
+        await ProductionPlanService.UpdateKwit(new UpdateKwit
+        {
+            Id = kwit.Id,
+            QuantityNetto = kwit.QuantityNetto,
+            QuantityLoss = kwit.QuantityLoss,
+            QuantityToImprove = kwit.QuantityToImprove,
+        });
+        NavManager.NavigateTo($"/productionPlan?dateString={DateString}&shift={Shift}&team={Team}");
+    }
+
+    private Task ShowDependencyChart(int kwitId)
+    {
+        request = new GetDocumentDependencyChartRequest { DocumentId = kwitId, DocumentType = "Kwit" };
+        return Task.CompletedTask;
+    }
+
+}

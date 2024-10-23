@@ -1,0 +1,21 @@
+﻿@using Blazor.Diagrams.Components.Renderers;
+
+<div style="@(Node.IsSelected ? "background-color: red;" : "")">
+    <h5>@Node.Title</h5>
+
+    @if (Node.DocumentType != "Zamówienie")
+    {
+        <a href="@Node.AddrToRedirect" target="_blank" class="btn btn-sm btn-primary">Otwórz</a>
+    }
+
+    @foreach (var port in Node.Ports)
+    {
+        <PortRenderer @key="port" Port="port"/>
+    }
+</div>
+
+@code {
+
+    // This gets filled by the library
+    [Parameter] public DocumentNode Node { get; set; } = null!;
+}
