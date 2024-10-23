@@ -33,7 +33,7 @@ jobs:
       - name: Build Docker image
         run: |
           docker build -t luzyce-api -f apps/src/Luzyce.Api/Dockerfile .
-      
+
       - name: Tag and push image to GitHub Container Registry
         run: |
           IMAGE_ID=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
