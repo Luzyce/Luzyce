@@ -1,0 +1,56 @@
+name: Deploy Develop
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_run:
+    runs-on: self-hosted
+    environment: Develop
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Stop & clean old containers
+        run: |
+          if [ $(docker ps -q -f name=luzyceapi) ]; then
+            docker stop luzyceapi
+          fi
+          if [ $(docker ps -aq -f name=luzyceapi) ]; then
+            docker rm luzyceapi
+          fi
+          if [ $(docker images -q luzyceapi:latest) ]; then
+            docker rmi -f luzyceapi:latest
+          fi
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./apps/src/Luzyce.Api
+          file: ./apps/src/Luzyce.Api/Dockerfile
+          push: false
+          load: true
+          tags: luzyceapi:latest
+
+      - name: Run Docker container
+        run: |
+          docker run \
+            -d \
+            -p 35132:35132 \
+            -e MYSQLCONNSTR_AppDbConnection='${{ secrets.CONNECTION_STRING_APP_DB }}' \
+            -e SQLCONNSTR_SubiektConnection='${{ secrets.CONNECTION_STRING_SUBIEKT }}' \
+            -e Jwt__SigningKey='${{ secrets.JWT_SIGNING_KEY }}' \
+            -e ASPNETCORE_HTTP_PORTS=35132 \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            --name luzyceapi \
+            luzyceapi:latest
+
+      - name: Check container logs
+        run: |
+          sleep 10
+          docker logs $(docker ps -q --last 1)
