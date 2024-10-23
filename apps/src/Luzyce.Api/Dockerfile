@@ -6,12 +6,12 @@ EXPOSE 35132
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["LuzyceApi/LuzyceApi.csproj", "LuzyceApi/"]
-COPY ["LuzyceApi.Repositories/LuzyceApi.Repositories.csproj", "LuzyceApi.Repositories/"]
-COPY ["LuzyceApi.Domain/LuzyceApi.Domain.csproj", "LuzyceApi.Domain/"]
-COPY ["LuzyceApi.Db.AppDb/LuzyceApi.Db.AppDb.csproj", "LuzyceApi.Db.AppDb/"]
-COPY ["LuzyceApi.Db.Subiekt/LuzyceApi.Db.Subiekt.csproj", "LuzyceApi.Db.Subiekt/"]
-RUN dotnet restore "./LuzyceApi/LuzyceApi.csproj"
+COPY ["/Luzyce.Api.csproj", "Luzyce.Api/"]
+COPY ["../shared/src/Luzyce.Api.Repositories/Luzyce.Api.Repositories.csproj", "../shared/src/Luzyce.Api.Repositories/"]
+COPY ["../shared/src/Luzyce.Api.Domain/Luzyce.Api.Domain.csproj", "../shared/src/Luzyce.Api.Domain/"]
+COPY ["../shared/src/Luzyce.Api.Db.AppDb/Luzyce.Api.Db.AppDb.csproj", "../shared/src/Luzyce.Api.Db.AppDb/"]
+COPY ["../shared/src/Luzyce.Api.Db.Subiekt/Luzyce.Api.Db.Subiekt.csproj", "../shared/src/Luzyce.Api.Db.Subiekt/"]
+RUN dotnet restore "./Luzyce.Api.csproj"
 COPY . .
 WORKDIR "/src/LuzyceApi"
 RUN dotnet build "./LuzyceApi.csproj" -c $BUILD_CONFIGURATION -o /app/build
