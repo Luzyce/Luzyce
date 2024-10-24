@@ -4,14 +4,18 @@ on:
   push:
     branches:
       - main
-      
+
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Build and push the image
-        run:
+      - name: Log in to GitHub Container Registry
+        run: |
           docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
-          docker build -t ghcr.io/luzyce/luzyce-api:latest -f apps/src/Luzyce.Api/Dockerfile .  
+      - name: Build the Docker image
+        run: |
+          docker build -t ghcr.io/luzyce/luzyce-api:latest -f apps/src/Luzyce.Api/Dockerfile .
+      - name: Push the Docker image
+        run: |
           docker push ghcr.io/luzyce/luzyce-api:latest
