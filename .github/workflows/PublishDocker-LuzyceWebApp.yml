@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'apps/src/Luzyce.WebApp/**'
 
 jobs:
   build-and-push-image:
