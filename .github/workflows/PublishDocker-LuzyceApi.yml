@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'apps/src/Luzyce.Api/Dockerfile'
+      - 'apps/src/Luzyce.Api/**'
 
 jobs:
   build-and-push-image:
