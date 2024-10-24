@@ -1,33 +1,28 @@
-# Use the .NET SDK to build the application as before
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+USER app
+WORKDIR /app
+EXPOSE 35133
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
-# Copy Luzyce.Shared project
-COPY ["../../../shared/src/Luzyce.Shared/Luzyce.Shared.csproj", "../../../shared/src/Luzyce.Shared/"]
-RUN dotnet restore "../../../shared/src/Luzyce.Shared/Luzyce.Shared.csproj"
-COPY ["../../../shared/src/Luzyce.Shared/", "../../../shared/src/Luzyce.Shared/"]
-
-# Copy and build Luzyce.WebApp
-COPY ["Luzyce.WebApp.csproj", "./"]
-RUN dotnet restore "./Luzyce.WebApp.csproj"
+COPY ["apps/src/Luzyce.WebApp/Luzyce.WebApp.csproj", "apps/src/Luzyce.WebApp/"]
+COPY ["shared/src/Luzyce.Core/Luzyce.Core.csproj", "shared/src/Luzyce.Core/"]
+RUN dotnet restore "apps/src/Luzyce.WebApp/Luzyce.WebApp.csproj"
 COPY . .
-WORKDIR "/src"
-RUN dotnet build "./Luzyce.WebApp.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/apps/src/Luzyce.WebApp"
+RUN dotnet build "Luzyce.WebApp.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
-# Publish the application
 FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./Luzyce.WebApp.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-# Use the Nginx image to serve the static content
 FROM nginx:alpine as final
 WORKDIR /var/www/html
 
-# Copy the published content from the publish stage to the nginx html directory
 COPY --from=publish /app/publish/wwwroot .
 
-# Setup nginx configuration
 COPY apps/src/Luzyce.WebApp/nginx.conf /etc/nginx/nginx.conf
 
-# Expose port 35133 for external access
-EXPOSE 35133
+
