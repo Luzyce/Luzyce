@@ -1,0 +1,118 @@
+name: Build and Production Deploy - Luzyce.Api and Luzyce.WebApp
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push-api-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Log in to GitHub Container Registry
+        run: |
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
+      - name: Build the Docker image for Luzyce.Api
+        run: |
+          docker build -t ghcr.io/luzyce/luzyce-api:latest -f apps/src/Luzyce.Api/Dockerfile .
+      - name: Push the Docker image for Luzyce.Api
+        run: |
+          docker push ghcr.io/luzyce/luzyce-api:latest
+
+  build-and-push-webapp-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Log in to GitHub Container Registry
+        run: |
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
+      - name: Build the Docker image for Luzyce.WebApp
+        run: |
+          docker build -t ghcr.io/luzyce/luzyce-webapp:latest -f apps/src/Luzyce.WebApp/Dockerfile .
+      - name: Push the Docker image for Luzyce.WebApp
+        run: |
+          docker push ghcr.io/luzyce/luzyce-webapp:latest
+
+  deploy-api:
+    runs-on: [self-hosted, prod-luzyce-api]
+    environment: Develop
+    needs: [build-and-push-api-image, build-and-push-webapp-image]
+    steps:
+      - name: Log in to GitHub Container Registry
+        run: |
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
+
+      - name: Stop & clean old containers for Luzyce.Api
+        run: |
+          if [ $(docker ps -q -f name=luzyceapi) ]; then
+            docker stop luzyceapi
+          fi
+          if [ $(docker ps -aq -f name=luzyceapi) ]; then
+            docker rm luzyceapi
+          fi
+          if [ $(docker images -q ghcr.io/luzyce/luzyce-api:latest) ]; then
+            docker rmi -f ghcr.io/luzyce/luzyce-api:latest
+          fi
+
+      - name: Pull Docker image for Luzyce.Api from GitHub Container Registry
+        run: |
+          docker pull ghcr.io/luzyce/luzyce-api:latest
+
+      - name: Run Docker container for Luzyce.Api
+        run: |
+          docker run \
+            -d \
+            -p 35132:35132 \
+            -e MYSQLCONNSTR_AppDbConnection='${{ secrets.CONNECTION_STRING_APP_DB }}' \
+            -e SQLCONNSTR_SubiektConnection='${{ secrets.CONNECTION_STRING_SUBIEKT }}' \
+            -e Jwt__SigningKey='${{ secrets.JWT_SIGNING_KEY }}' \
+            -e ASPNETCORE_HTTP_PORTS=35132 \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            --name luzyceapi \
+            ghcr.io/luzyce/luzyce-api:latest
+
+      - name: Check Luzyce.Api container logs
+        run: |
+          sleep 10
+          docker logs $(docker ps -q --last 1)
+
+  deploy-webapp:
+    runs-on: [self-hosted, prod-luzyce-webapp]
+    environment: Develop
+    needs: [build-and-push-api-image, build-and-push-webapp-image]
+    steps:
+      - name: Log in to GitHub Container Registry
+        run: |
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
+
+      - name: Stop & clean old containers for Luzyce.WebApp
+        run: |
+          if [ $(docker ps -q -f name=luzycewebapp) ]; then
+            docker stop luzycewebapp
+          fi
+          if [ $(docker ps -aq -f name=luzycewebapp) ]; then
+            docker rm luzycewebapp
+          fi
+          if [ $(docker images -q ghcr.io/luzyce/luzyce-webapp:latest) ]; then
+            docker rmi -f ghcr.io/luzyce/luzyce-webapp:latest
+          fi
+
+      - name: Pull Docker image for Luzyce.WebApp from GitHub Container Registry
+        run: |
+          docker pull ghcr.io/luzyce/luzyce-webapp:latest
+
+      - name: Run Docker container for Luzyce.WebApp
+        run: |
+          docker run \
+            -d \
+            -p 35133:35133 \
+            -e ASPNETCORE_HTTP_PORTS=35133 \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            --name luzycewebapp \
+            ghcr.io/luzyce/luzyce-webapp:latest
+
+      - name: Check Luzyce.WebApp container logs
+        run: |
+          sleep 10
+          docker logs $(docker ps -q --last 1)
