@@ -12,6 +12,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Build and push the image
         run:
-          docker login --username ddnowicki -password ${{ secrets.GH_PAT }} ghcr.io
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
           docker build -t ghcr.io/luzyce/luzyce-api:latest -f apps/src/Luzyce.Api/Dockerfile .  
           docker push ghcr.io/luzyce/luzyce-api:latest
