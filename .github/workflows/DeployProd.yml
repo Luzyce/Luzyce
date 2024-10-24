@@ -37,7 +37,7 @@ jobs:
   deploy-api:
     runs-on: [self-hosted, prod-luzyce-api]
     environment: Develop
-    needs: [build-and-push-api-image, build-and-push-webapp-image]
+    needs: build-and-push-api-image
     steps:
       - name: Log in to GitHub Container Registry
         run: |
@@ -80,7 +80,7 @@ jobs:
   deploy-webapp:
     runs-on: [self-hosted, prod-luzyce-webapp]
     environment: Develop
-    needs: [build-and-push-api-image, build-and-push-webapp-image]
+    needs: build-and-push-webapp-image
     steps:
       - name: Log in to GitHub Container Registry
         run: |
