@@ -6,52 +6,14 @@ on:
       - main
     paths:
       - 'apps/src/Luzyce.Api/Dockerfile'
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
+      
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: read
-      packages: write
-      
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Log in to the Container registry
-        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Build Docker image
-        run: |
-          docker build -t luzyce-api -f apps/src/Luzyce.Api/Dockerfile .
-
-      - name: Tag and push image to GitHub Container Registry
-        run: |
-          IMAGE_ID=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          
-          # Change all uppercase to lowercase
-          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
-          
-          # Strip git ref prefix from version
-          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
-          
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-          
-          # Use Docker `latest` tag convention
-          [ "$VERSION" == "main" ] && VERSION=latest
-          
-          echo IMAGE_ID=$IMAGE_ID
-          echo VERSION=$VERSION
-          
-          docker tag luzyce-api $IMAGE_ID:$VERSION
-          docker push $IMAGE_ID:$VERSION
+      - uses: actions/checkout@v3
+      - name: Build and push the image
+        run:
+          docker login --username ddnowicki -password ${{ secrets.GH_PAT }} ghcr.io
+          docker build -t ghcr.io/luzyce/luzyce-api:latest -f apps/src/Luzyce.Api/Dockerfile .  
+          docker push ghcr.io/luzyce/luzyce-api:latest
