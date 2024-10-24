@@ -1,0 +1,21 @@
+name: Publish Docker - Luzyce.WebApp
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Log in to GitHub Container Registry
+        run: |
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
+      - name: Build the Docker image
+        run: |
+          docker build -t ghcr.io/luzyce/luzyce-webapp:latest -f apps/src/Luzyce.WebApp/Dockerfile .
+      - name: Push the Docker image
+        run: |
+          docker push ghcr.io/luzyce/luzyce-webapp:latest
