@@ -1,4 +1,4 @@
-name: Deploy Develop - Luzyce.WebApp
+name: Build and Deploy - Luzyce.WebApp
 
 on:
   push:
@@ -6,34 +6,44 @@ on:
       - main
 
 jobs:
-  build_and_run:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Log in to GitHub Container Registry
+        run: |
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
+      - name: Build the Docker image
+        run: |
+          docker build -t ghcr.io/luzyce/luzyce-webapp:latest -f apps/src/Luzyce.WebApp/Dockerfile .
+      - name: Push the Docker image
+        run: |
+          docker push ghcr.io/luzyce/luzyce-webapp:latest
+
+  deploy-develop:
     runs-on: self-hosted
     environment: Develop
+    needs: build-and-push-image
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        run: |
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
 
       - name: Stop & clean old containers
         run: |
-          if [ $(docker container ls -a -q -f name=luzycewebapp) ]; then
-            docker container stop luzycewebapp
-            docker container rm luzycewebapp
+          if [ $(docker ps -q -f name=luzycewebapp) ]; then
+            docker stop luzycewebapp
           fi
-          if [ $(docker image ls -q luzycewebapp:latest) ]; then
-            docker image rm luzycewebapp:latest
+          if [ $(docker ps -aq -f name=luzycewebapp) ]; then
+            docker rm luzycewebapp
+          fi
+          if [ $(docker images -q ghcr.io/luzyce/luzyce-webapp:latest) ]; then
+            docker rmi -f ghcr.io/luzyce/luzyce-webapp:latest
           fi
 
-      - name: Build and Push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./apps/src/Luzyce.WebApp
-          file: /apps/src/Luzyce.WebApp/Dockerfile
-          push: false
-          load: true
-          tags: luzycewebapp:latest
+      - name: Pull Docker image from GitHub Container Registry
+        run: |
+          docker pull ghcr.io/luzyce/luzyce-webapp:latest
 
       - name: Run Docker container
         run: |
@@ -43,7 +53,7 @@ jobs:
             -e ASPNETCORE_HTTP_PORTS=35133 \
             -e ASPNETCORE_ENVIRONMENT=Development \
             --name luzycewebapp \
-            luzycewebapp:latest
+            ghcr.io/luzyce/luzyce-webapp:latest
 
       - name: Check container logs
         run: |
