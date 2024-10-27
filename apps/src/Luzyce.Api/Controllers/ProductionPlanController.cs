@@ -51,7 +51,10 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
     [Authorize]
     public IActionResult DeletePosition(int id)
     {
-        eventRepository.AddLog(User, "Usunięto pozycję z planu produkcji", JsonSerializer.Serialize(new {id}));
+        eventRepository.AddLog(User, "Usunięto pozycję z planu produkcji", JsonSerializer.Serialize(new
+        {
+            id
+        }));
         productionPlanRepository.DeletePosition(id);
         return Ok();
     }
@@ -90,7 +93,10 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
 
         if (kwit == null)
         {
-            eventRepository.AddLog(User, "Nie udało się pobrać pliku pdf kwitu - kwit nie został znaleziony", JsonSerializer.Serialize(new {id}));
+            eventRepository.AddLog(User, "Nie udało się pobrać pliku pdf kwitu - kwit nie został znaleziony", JsonSerializer.Serialize(new
+            {
+                id
+            }));
             return Results.File(Array.Empty<byte>(), "application/pdf");
         }
 
@@ -107,75 +113,77 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
                 page.Size(PageSizes.A4);
                 page.Margin(1, Unit.Centimetre);
                 page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(20));
+                page.DefaultTextStyle(x => x.FontSize(12));
 
                 page.Header().Layers(layers =>
                 {
                     layers.PrimaryLayer()
                         .TranslateX(-1, Unit.Centimetre)
                         .AlignRight()
-                        .Width(2, Unit.Centimetre)
+                        .Width(3, Unit.Centimetre)
                         .Svg(qrSVGString);
 
                     layers.Layer()
                         .Text(kwit.Number)
                         .SemiBold()
-                        .FontSize(16);
+                        .FontSize(12);
                 });
 
                 page.Content()
-                    .PaddingVertical(1, Unit.Centimetre)
+                    .PaddingVertical((float)0.5, Unit.Centimetre)
                     .Column(x =>
                     {
-                        x.Spacing(20);
+                        x.Spacing(10);
 
-                        x.Item()
-                            .Text(
-                                $"Asortyment: {kwit.DocumentPositions[0].Lampshade?.Code} {kwit.DocumentPositions[0].LampshadeNorm?.Variant?.Name} {kwit.DocumentPositions[0].LampshadeDekor}")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
-                                $"Ilość: {kwit.ProductionPlanPositions?.Quantity} {kwit.DocumentPositions[0].OrderPositionForProduction?.Unit}")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
-                                $"Nazwa klienta: {kwit.DocumentPositions[0].OrderPositionForProduction?.Order?.Customer?.Name}")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
-                                $"Zmiana: {kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftNumber}")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
+                        x.Item().Text(
+                                $"Data: {kwit.ProductionPlanPositions?.ProductionPlan?.Date.ToString("dd.MM.yyyy")} " +
+                                $"Zmiana: {kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftNumber} " +
                                 $"Zespół: {kwit.ProductionPlanPositions?.ProductionPlan?.Team}")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
-                                $"Hutmistrz: {kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftSupervisor?.Name} {kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftSupervisor?.LastName}")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
-                                $"Hutnik: {kwit.ProductionPlanPositions?.ProductionPlan?.HeadsOfMetallurgicalTeams?.Name} {kwit.ProductionPlanPositions?.ProductionPlan?.HeadsOfMetallurgicalTeams?.LastName}")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
-                                $"Norma: {kwit.DocumentPositions[0].LampshadeNorm?.QuantityPerChange} {kwit.DocumentPositions[0].OrderPositionForProduction?.Unit}")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
-                                $"Waga netto: {kwit.DocumentPositions[0].LampshadeNorm?.WeightNetto} kg")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
-                                $"Waga brutto: {kwit.DocumentPositions[0].LampshadeNorm?.WeightBrutto} kg")
-                            .FontSize(16);
-                        x.Item()
-                            .Text(
+                            .FontSize(12);
+
+                        x.Item().Row(row =>
+                        {
+                            row.RelativeItem()
+                                .Text(
+                                    $"Asortyment: {kwit.DocumentPositions[0].Lampshade?.Code} {kwit.DocumentPositions[0].LampshadeNorm?.Variant?.Name} {kwit.DocumentPositions[0].LampshadeDekor}")
+                                .FontSize(12);
+                            row.RelativeItem()
+                                .Text(
+                                    $"Nazwa klienta: {kwit.DocumentPositions[0].OrderPositionForProduction?.Order?.Customer?.Name}")
+                                .FontSize(12);
+                        });
+                        
+                        x.Item().Row(row =>
+                        {
+                            row.RelativeItem()
+                                .Text(
+                                    $"Ilość: {kwit.ProductionPlanPositions?.Quantity} {kwit.DocumentPositions[0].OrderPositionForProduction?.Unit}")
+                                .FontSize(12);
+                            row.RelativeItem()
+                                .Text(
+                                    $"Norma: {kwit.DocumentPositions[0].LampshadeNorm?.QuantityPerChange} {kwit.DocumentPositions[0].OrderPositionForProduction?.Unit}")
+                                .FontSize(12);
+                        });
+                        
+                        x.Item().Row(row =>
+                        {
+                            row.RelativeItem()
+                                .Text(
+                                    $"Waga netto: {kwit.DocumentPositions[0].LampshadeNorm?.WeightNetto} kg")
+                                .FontSize(12);
+                            row.RelativeItem()
+                                .Text(
+                                    $"Waga brutto: {kwit.DocumentPositions[0].LampshadeNorm?.WeightBrutto} kg")
+                                .FontSize(12);
+                        });
+                        
+                        x.Item().Text(
                                 $"Planowany wyciąg z wanny: {kwit.DocumentPositions[0].LampshadeNorm?.WeightBrutto * kwit.ProductionPlanPositions?.Quantity} kg")
-                            .FontSize(16);
+                            .FontSize(12);
                     });
             });
         });
+
 
         var pdf = document.GeneratePdf();
 
@@ -267,7 +275,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
                                     {
                                         var cellText = $"Hutnik: {plan.HeadsOfMetallurgicalTeams?.Name} {plan.HeadsOfMetallurgicalTeams?.LastName}\n";
                                         cellText += $"Uwagi: {plan.Remarks}\n";
-                                        
+
                                         for (var i = 0; i < plan.Positions.Count; i++)
                                         {
                                             if (i != 0)
