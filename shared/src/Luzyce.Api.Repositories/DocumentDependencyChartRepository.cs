@@ -145,7 +145,7 @@ public class DocumentDependencyChartRepository(ApplicationDbContext applicationD
         Name = $"PP {productionPlan.Date:dd.MM.yyyy} " +
                $"Zmiana: {productionPlan.Shift?.ShiftNumber} " +
                $"Zespół: {productionPlan.Team}",
-        AddrToRedirect = $"/productionPlan?date={productionPlan.Date.ToString("yyyy-MM-dd")}&" +
+        AddrToRedirect = $"/productionPlan?dateString={productionPlan.Date.ToString("yyyy-MM-dd")}&" +
                          $"shift={productionPlan.Shift?.ShiftNumber}&" +
                          $"team={productionPlan.Team}",
         Positions = productionPlan.Positions.Select(
@@ -162,7 +162,7 @@ public class DocumentDependencyChartRepository(ApplicationDbContext applicationD
         Id = productionPlanPosition.Kwit.First().Id,
         DocumentType = "Kwit",
         Name = productionPlanPosition.Kwit.First().Number,
-        AddrToRedirect = $"/productionPlan/editKwit?date={productionPlanPosition.ProductionPlan?.Date.ToString("yyyy-MM-dd")}&" +
+        AddrToRedirect = $"/productionPlan/editKwit?dateString={productionPlanPosition.ProductionPlan?.Date.ToString("yyyy-MM-dd")}&" +
                          $"shift={productionPlanPosition.ProductionPlan?.Shift?.ShiftNumber}&" +
                          $"team={productionPlanPosition.ProductionPlan?.Team}&" +
                          $"kwitId={productionPlanPosition.Kwit.First().Id}",

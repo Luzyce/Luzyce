@@ -352,36 +352,54 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
     {
         var productionPlan = applicationDbContext.ProductionPlans
             .Include(productionPlan => productionPlan.Shift)
+            .Include(productionPlan => productionPlan.Positions)
+            .ThenInclude(pp => pp.DocumentPosition!.LampshadeNorm)
             .FirstOrDefault(x => x.Id == request.Id);
-        
+    
         if (productionPlan == null)
         {
             return;
         }
-        
+    
         productionPlan.Shift!.ShiftSupervisorId = request.ShiftSupervisorId;
         productionPlan.HeadsOfMetallurgicalTeamsId = request.HeadsOfMetallurgicalTeamsId;
         productionPlan.Remarks = request.Remarks;
         
+        var positionDictionary = productionPlan.Positions.ToDictionary(p => p.Id);
+        var oldLampshadeNorms = applicationDbContext.ProductionPlanPositions
+            .Where(pp => pp.ProductionPlanId == productionPlan.Id)
+            .Select(p => p.DocumentPosition!.LampshadeNorm!)
+            .AsNoTracking()
+            .ToList();
+        
         foreach (var position in request.ProductionPlanPositions)
         {
-            var productionPlanPosition = applicationDbContext.ProductionPlanPositions
-                .Include(productionPlanPositions => productionPlanPositions.DocumentPosition!)
-                .ThenInclude(documentPositions => documentPositions.LampshadeNorm!)
-                .FirstOrDefault(x => x.Id == position.Id);
-            
-            if (productionPlanPosition == null)
+            if (!positionDictionary.TryGetValue(position.Id, out var productionPlanPosition))
             {
                 continue;
             }
             
             productionPlanPosition.Quantity = position.Quantity;
             productionPlanPosition.NumberOfHours = position.NumberOfHours;
-            productionPlanPosition.DocumentPosition!.LampshadeNorm!.WeightNetto = position.WeightNetto;
-            productionPlanPosition.DocumentPosition!.LampshadeNorm!.WeightBrutto = position.WeightBrutto;
-            productionPlanPosition.DocumentPosition!.LampshadeNorm!.QuantityPerChange = position.QuantityPerChange;
+                
+            var matchingLampshadeNorm = oldLampshadeNorms.FirstOrDefault(x => x.Id == productionPlanPosition.DocumentPosition?.LampshadeNorm!.Id);
+
+            if (position.WeightNetto != matchingLampshadeNorm?.WeightNetto)
+            {
+                productionPlanPosition.DocumentPosition!.LampshadeNorm!.WeightNetto = position.WeightNetto;
+            }
+                
+            if (position.WeightBrutto != matchingLampshadeNorm?.WeightBrutto)
+            {
+                productionPlanPosition.DocumentPosition!.LampshadeNorm!.WeightBrutto = position.WeightBrutto;
+            }
+
+            if (position.QuantityPerChange != matchingLampshadeNorm?.QuantityPerChange)
+            {
+                productionPlanPosition.DocumentPosition!.LampshadeNorm!.QuantityPerChange = position.QuantityPerChange;
+            }
         }
-        
+    
         applicationDbContext.SaveChanges();
     }
 
