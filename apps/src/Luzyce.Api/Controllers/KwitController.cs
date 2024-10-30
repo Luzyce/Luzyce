@@ -5,6 +5,7 @@ using Luzyce.Api.Domain.Models;
 using Luzyce.Api.Repositories;
 using Luzyce.Shared.Models.Document;
 using Luzyce.Shared.Models.Kwit;
+using Luzyce.Shared.Models.Terminal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -323,6 +324,30 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
             QuantityNetto = documentPosition.QuantityNetto,
             QuantityLoss = documentPosition.QuantityLoss,
             QuantityToImprove = documentPosition.QuantityToImprove
+        });
+    }
+
+    [HttpPost("terminal/getErrorCode")]
+    [Authorize]
+    public IActionResult TerminalGetErrorCode([FromBody] ErrorCodeRequest request)
+    {
+        var errorCode = kwitRepository.GetError(request.ErrorCode);
+
+        if (errorCode == null)
+        {
+            _eventRepository.AddLog(User, "Nie udało się pobrać kodu błędu - kod błędu nie został znaleziony",
+                JsonSerializer.Serialize(request));
+            return NotFound(new
+            {
+                ErrorCode = "Nie udało się pobrać kodu błędu - kod błędu nie został znaleziony"
+            });
+        }
+
+        _eventRepository.AddLog(User, "Pobrano kod błędu", JsonSerializer.Serialize(request));
+
+        return Ok(new ErrorCodeResponse
+        {
+            ErrorCode = errorCode.Code
         });
     }
 
