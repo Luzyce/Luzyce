@@ -51,7 +51,7 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
                     .Where(x => x.ErrorCodeId == operation.ErrorCodeId)
                     .Sum(x => x.QuantityLossDelta),
                 ErrorName = operation.ErrorCode.Name,
-                ErrorShortName = operation.ErrorCode.ShortName
+                ErrorCode = operation.ErrorCode.Code
             });
         }
 
@@ -114,6 +114,9 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         var kwit = applicationDbContext.Documents
             .Include(document => document.ProductionPlanPositions)
             .ThenInclude(productionPlanPositions => productionPlanPositions!.ProductionPlan)
+            .ThenInclude(productionPlan => productionPlan!.Positions)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.DocumentPosition)
+            .ThenInclude(documentPositions => documentPositions!.LampshadeNorm)
             .FirstOrDefault(x => x.Id == id);
         
         if (kwit == null)
@@ -124,7 +127,7 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         kwit.ClosedAt = null;
         kwit.StatusId = 1;
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
-        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = 1;
+        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Sum(x => x.Quantity / x.DocumentPosition?.LampshadeNorm?.QuantityPerChange * 8) == 8 ? 3 : 1;
         applicationDbContext.SaveChanges();
     }
 
@@ -226,7 +229,7 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
             .Include(document => document.ProductionPlanPositions!)
             .ThenInclude(productionPlanPositions => productionPlanPositions.ProductionPlan!)
             .ThenInclude(productionPlan => productionPlan.Positions)
-            .ThenInclude(productionPlanPositions => productionPlanPositions.Kwit)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.Kwit).Include(document => document.ProductionPlanPositions).ThenInclude(productionPlanPositions => productionPlanPositions.ProductionPlan).ThenInclude(productionPlan => productionPlan.Positions).ThenInclude(productionPlanPositions => productionPlanPositions.DocumentPosition).ThenInclude(documentPositions => documentPositions.LampshadeNorm)
             .FirstOrDefault(x => x.Id == id);
         
         if (kwit == null)
@@ -238,9 +241,7 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         kwit.LockedBy = null;
         kwit.StatusId = 3;
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
-        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = 
-            kwit.ProductionPlanPositions!.ProductionPlan!.Positions
-                .All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
+        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Sum(x => x.Quantity / x.DocumentPosition?.LampshadeNorm?.QuantityPerChange * 8) == 8 ? 3 : 1;
         applicationDbContext.SaveChanges();
     }
 
