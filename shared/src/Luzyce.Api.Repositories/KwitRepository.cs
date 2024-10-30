@@ -111,7 +111,11 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
 
     public void RevertKwit(int id)
     {
-        var kwit = applicationDbContext.Documents.Find(id);
+        var kwit = applicationDbContext.Documents
+            .Include(document => document.ProductionPlanPositions)
+            .ThenInclude(productionPlanPositions => productionPlanPositions!.ProductionPlan)
+            .FirstOrDefault(x => x.Id == id);
+        
         if (kwit == null)
         {
             return;
@@ -120,12 +124,18 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         kwit.ClosedAt = null;
         kwit.StatusId = 1;
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
+        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = 1;
         applicationDbContext.SaveChanges();
     }
 
     public void CloseKwit(int id)
     {
-        var kwit = applicationDbContext.Documents.Find(id);
+        var kwit = applicationDbContext.Documents
+            .Include(document => document.ProductionPlanPositions)
+            .ThenInclude(productionPlanPositions => productionPlanPositions!.ProductionPlan)
+            .ThenInclude(productionPlan => productionPlan!.Positions)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.Kwit)
+            .FirstOrDefault(x => x.Id == id);
         if (kwit == null)
         {
             return;
@@ -134,6 +144,10 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         kwit.ClosedAt = DateTime.Now.ConvertToEuropeWarsaw();
         kwit.StatusId = 3;
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
+        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = 
+            kwit.ProductionPlanPositions!.ProductionPlan!.Positions
+                .All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
+        
         applicationDbContext.SaveChanges();
     }
 
@@ -208,7 +222,13 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
 
     public void UnlockKwit(int id)
     {
-        var kwit = applicationDbContext.Documents.Find(id);
+        var kwit = applicationDbContext.Documents
+            .Include(document => document.ProductionPlanPositions!)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.ProductionPlan!)
+            .ThenInclude(productionPlan => productionPlan.Positions)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.Kwit)
+            .FirstOrDefault(x => x.Id == id);
+        
         if (kwit == null)
         {
             return;
@@ -218,6 +238,9 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         kwit.LockedBy = null;
         kwit.StatusId = 3;
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
+        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = 
+            kwit.ProductionPlanPositions!.ProductionPlan!.Positions
+                .All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
         applicationDbContext.SaveChanges();
     }
 

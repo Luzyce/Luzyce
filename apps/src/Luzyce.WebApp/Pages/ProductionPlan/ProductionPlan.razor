@@ -104,14 +104,19 @@
                     <input type="number" class="form-control" @bind="item.Quantity">
                 </td>
                 <td>
-                    <input type="number" class="form-control" step="0.01" @bind="item.DocumentPosition.LampshadeNorm.WeightNetto">
+                    <input type="number" class="form-control" step="0.01"
+                           value="@item.DocumentPosition.LampshadeNorm.WeightNetto"
+                           @oninput="e => UpdateWeightNettoForSimilarPositions(item.Id, ParseDecimal(e.Value))">
                 </td>
                 <td>
-                    <input type="number" class="form-control" step="0.01" @bind="item.DocumentPosition.LampshadeNorm.WeightBrutto">
+                    <input type="number" class="form-control" step="0.01"
+                           value="@item.DocumentPosition.LampshadeNorm.WeightBrutto"
+                           @oninput="e => UpdateWeightBruttoForSimilarPositions(item.Id, ParseDecimal(e.Value))">
                 </td>
                 <td>
                     <input type="number" class="form-control @(item.DocumentPosition.LampshadeNorm.QuantityPerChange == 0 ? "bg-danger" : "")"
-                           @bind="item.DocumentPosition.LampshadeNorm.QuantityPerChange">
+                           value="@item.DocumentPosition.LampshadeNorm.QuantityPerChange"
+                           @oninput="e => UpdateQuantityPerChangeForSimilarPositions(item.Id, ParseInt(e.Value))">
                 </td>
                 <td>@item.DocumentPosition.Client</td>
                 <td>
@@ -317,5 +322,91 @@
         request = new GetDocumentDependencyChartRequest { DocumentId = productionPlanId, DocumentType = "Plan produkcji" };
         return Task.CompletedTask;
     }
+    
+    private int? ParseInt(object? value)
+    {
+        if (value is null || string.IsNullOrWhiteSpace(value.ToString()))
+        {
+            return null;
+        }
+        
+        if (int.TryParse((string?)value, out var result))
+        {
+            return result;
+        }
+        
+        return null;
+    }
+    
+    private decimal? ParseDecimal(object? value)
+    {
+        if (value is null || string.IsNullOrWhiteSpace(value.ToString()))
+        {
+            return null;
+        }
+        
+        if (decimal.TryParse((string?)value, out var result))
+        {
+            return result;
+        }
+        
+        return null;
+    }
+    
+    private void UpdateWeightNettoForSimilarPositions(int positionId, decimal? newWeightNetto)
+    {
+        var updatedPosition = GetProductionPlanPositions?.ProductionPlanPositions
+            .FirstOrDefault(p => p.Id == positionId);
 
+        if (updatedPosition == null) return;
+
+        var lampshadeNormId = updatedPosition.DocumentPosition.LampshadeNorm.Id;
+
+        foreach (var position in GetProductionPlanPositions!.ProductionPlanPositions
+            .Where(p => p.DocumentPosition.LampshadeNorm.Id == lampshadeNormId))
+        {
+            position.DocumentPosition.LampshadeNorm.WeightNetto = newWeightNetto;
+        }
+
+        StateHasChanged();
+    }
+    
+    private void UpdateWeightBruttoForSimilarPositions(int positionId, decimal? newWeightBrutto)
+    {
+        var updatedPosition = GetProductionPlanPositions?.ProductionPlanPositions
+            .FirstOrDefault(p => p.Id == positionId);
+
+        if (updatedPosition == null) return;
+
+        var lampshadeNormId = updatedPosition.DocumentPosition.LampshadeNorm.Id;
+
+        foreach (var position in GetProductionPlanPositions!.ProductionPlanPositions
+            .Where(p => p.DocumentPosition.LampshadeNorm.Id == lampshadeNormId))
+        {
+            position.DocumentPosition.LampshadeNorm.WeightBrutto = newWeightBrutto;
+        }
+
+        StateHasChanged();
+    }
+    
+    private void UpdateQuantityPerChangeForSimilarPositions(int positionId, int? quantityPerChange)
+    {
+        var updatedPosition = GetProductionPlanPositions?.ProductionPlanPositions
+            .FirstOrDefault(p => p.Id == positionId);
+
+        if (updatedPosition == null)
+        {
+            return;
+        }
+
+        var lampshadeNormId = updatedPosition.DocumentPosition.LampshadeNorm.Id;
+
+        foreach (var position in GetProductionPlanPositions!.ProductionPlanPositions
+            .Where(p => p.DocumentPosition.LampshadeNorm.Id == lampshadeNormId))
+        {
+            position.DocumentPosition.LampshadeNorm.QuantityPerChange = (int)(quantityPerChange ?? 0);
+        }
+
+        StateHasChanged();
+    }
 }

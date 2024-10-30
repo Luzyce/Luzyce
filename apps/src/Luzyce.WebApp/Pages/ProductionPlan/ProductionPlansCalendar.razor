@@ -67,6 +67,10 @@
         opacity: 0.8;
     }
 
+    .production-plans-container .status-done {
+        background-color: blue;
+    }
+
     .production-plans-container .status-planned {
         background-color: green;
     }
@@ -126,6 +130,7 @@
                                             {
                                                 1 => "status-inprogress",
                                                 3 => "status-planned",
+                                                5 => "status-done",
                                                 _ => ""
                                             };
 
@@ -151,7 +156,7 @@
 @code {
     private List<DateTime>? DaysOfMonth { get; set; }
     public DateTime CurrentDate { get; set; } = DateTime.Now;
-    private List<GetProductionPlanForCalendar>? productionPlans;
+    public List<GetProductionPlanForCalendar>? productionPlans;
     private DateOnly CurrentDay => DateOnly.FromDateTime(DateTime.Now);
 
     [Parameter] public EventCallback<(DateOnly date, int change, int team)> OnItemClick { get; set; }

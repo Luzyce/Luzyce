@@ -144,6 +144,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> dbConte
                 Id = 4,
                 Name = "Anulowany",
                 Priority = 40
+            },
+            new()
+            {
+                Id = 5,
+                Name = "Zakończony",
+                Priority = 50
             }
         };
 

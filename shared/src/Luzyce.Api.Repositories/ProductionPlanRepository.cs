@@ -354,6 +354,7 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
             .Include(productionPlan => productionPlan.Shift)
             .Include(productionPlan => productionPlan.Positions)
             .ThenInclude(pp => pp.DocumentPosition!.LampshadeNorm)
+            .Include(productionPlan => productionPlan.Positions).ThenInclude(productionPlanPositions => productionPlanPositions.Kwit)
             .FirstOrDefault(x => x.Id == request.Id);
     
         if (productionPlan == null)
@@ -365,12 +366,18 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
         productionPlan.HeadsOfMetallurgicalTeamsId = request.HeadsOfMetallurgicalTeamsId;
         productionPlan.Remarks = request.Remarks;
         
+        if (request.ProductionPlanPositions.All(x => x.QuantityPerChange != null) &&
+            request.ProductionPlanPositions.Sum(x => x.Quantity / (decimal)x.QuantityPerChange! * 8) == 8)
+        {
+            productionPlan.StatusId = productionPlan.Positions.All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
+        }
+        else
+        {
+            productionPlan.StatusId = 1;
+        }
+
+        
         var positionDictionary = productionPlan.Positions.ToDictionary(p => p.Id);
-        var oldLampshadeNorms = applicationDbContext.ProductionPlanPositions
-            .Where(pp => pp.ProductionPlanId == productionPlan.Id)
-            .Select(p => p.DocumentPosition!.LampshadeNorm!)
-            .AsNoTracking()
-            .ToList();
         
         foreach (var position in request.ProductionPlanPositions)
         {
@@ -381,23 +388,10 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
             
             productionPlanPosition.Quantity = position.Quantity;
             productionPlanPosition.NumberOfHours = position.NumberOfHours;
-                
-            var matchingLampshadeNorm = oldLampshadeNorms.FirstOrDefault(x => x.Id == productionPlanPosition.DocumentPosition?.LampshadeNorm!.Id);
-
-            if (position.WeightNetto != matchingLampshadeNorm?.WeightNetto)
-            {
-                productionPlanPosition.DocumentPosition!.LampshadeNorm!.WeightNetto = position.WeightNetto;
-            }
-                
-            if (position.WeightBrutto != matchingLampshadeNorm?.WeightBrutto)
-            {
-                productionPlanPosition.DocumentPosition!.LampshadeNorm!.WeightBrutto = position.WeightBrutto;
-            }
-
-            if (position.QuantityPerChange != matchingLampshadeNorm?.QuantityPerChange)
-            {
-                productionPlanPosition.DocumentPosition!.LampshadeNorm!.QuantityPerChange = position.QuantityPerChange;
-            }
+            
+            productionPlanPosition.DocumentPosition!.LampshadeNorm!.WeightNetto = position.WeightNetto;
+            productionPlanPosition.DocumentPosition!.LampshadeNorm!.WeightBrutto = position.WeightBrutto;
+            productionPlanPosition.DocumentPosition!.LampshadeNorm!.QuantityPerChange = position.QuantityPerChange;
         }
     
         applicationDbContext.SaveChanges();
