@@ -327,9 +327,9 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
         });
     }
 
-    [HttpPost("terminal/getErrorCode")]
+    [HttpPost("terminal/getError")]
     [Authorize]
-    public IActionResult TerminalGetErrorCode([FromBody] ErrorCodeRequest request)
+    public IActionResult TerminalGetError([FromBody] ErrorCodeRequest request)
     {
         var errorCode = kwitRepository.GetError(request.ErrorCode);
 
@@ -347,7 +347,7 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
 
         return Ok(new ErrorCodeResponse
         {
-            ErrorCode = errorCode.Code
+            ErrorName = errorCode.Name
         });
     }
 

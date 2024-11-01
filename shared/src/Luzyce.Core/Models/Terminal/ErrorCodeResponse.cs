@@ -2,5 +2,5 @@
 
 public class ErrorCodeResponse
 {
-    public string ErrorCode { get; set; } = string.Empty;
+    public string ErrorName { get; set; } = string.Empty;
 }
