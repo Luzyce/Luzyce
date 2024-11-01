@@ -345,10 +345,7 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
 
         _eventRepository.AddLog(User, "Pobrano kod błędu", JsonSerializer.Serialize(request));
 
-        return Ok(new ErrorCodeResponse
-        {
-            ErrorName = errorCode.Name
-        });
+        return Ok(errorCode.Name);
     }
 
     [HttpGet("terminal/closeKwit/{id:int}")]
