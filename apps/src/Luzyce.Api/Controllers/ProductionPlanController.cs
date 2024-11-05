@@ -116,7 +116,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         var qrSvgString = qrSvg.GetGraphic(3);
         
         using var stream = new MemoryStream();
-        using var pdfReader = new PdfReader("kwit-template.pdf");
+        using var pdfReader = new PdfReader("Resources/kwit-template.pdf");
         using var pdfWriter = new PdfWriter(stream);
         using var pdfDoc = new PdfDocument(pdfReader, pdfWriter);
         var doc = new iTextLayout.Document(pdfDoc);

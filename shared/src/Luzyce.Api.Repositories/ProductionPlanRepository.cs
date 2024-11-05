@@ -426,7 +426,6 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
             .Include(d => d.ProductionPlanPositions)
             .ThenInclude(ppp => ppp!.DocumentPosition)
             .ThenInclude(dp => dp!.LampshadeNorm)
-
             .Where(x => x.DocumentsDefinitionId == DocumentsDefinitions.KW_ID)
             .FirstOrDefault(x => x.Id == id);
 
