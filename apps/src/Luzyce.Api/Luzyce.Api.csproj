@@ -8,6 +8,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="itext" Version="8.0.5" />
+    <PackageReference Include="itext.bouncy-castle-adapter" Version="8.0.5" />
     <PackageReference Include="Luzyce.Core" Version="10.0.50" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
@@ -31,5 +33,10 @@
     <ProjectReference Include="..\..\..\shared\src\Luzyce.Api.Db.Subiekt\Luzyce.Api.Db.Subiekt.csproj" />
     <ProjectReference Include="..\..\..\shared\src\Luzyce.Api.Domain\Luzyce.Api.Domain.csproj" />
     <ProjectReference Include="..\..\..\shared\src\Luzyce.Api.Repositories\Luzyce.Api.Repositories.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="kwit-template.pdf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

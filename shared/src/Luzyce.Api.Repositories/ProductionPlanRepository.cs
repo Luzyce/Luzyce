@@ -423,6 +423,9 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
             .ThenInclude(dp => dp.OrderPositionForProduction)
             .ThenInclude(op => op!.Order)
             .ThenInclude(order => order!.Customer)
+            .Include(d => d.ProductionPlanPositions)
+            .ThenInclude(ppp => ppp!.DocumentPosition)
+            .ThenInclude(dp => dp!.LampshadeNorm)
 
             .Where(x => x.DocumentsDefinitionId == DocumentsDefinitions.KW_ID)
             .FirstOrDefault(x => x.Id == id);
