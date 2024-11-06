@@ -322,6 +322,10 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
     
         var pdf = document.GeneratePdf();
     
+        Response.Headers.CacheControl = "no-store, no-cache, must-revalidate, proxy-revalidate";
+        Response.Headers.Pragma = "no-cache";
+        Response.Headers.Expires = "0";
+        
         return Results.File(pdf, "application/pdf");
     }
 

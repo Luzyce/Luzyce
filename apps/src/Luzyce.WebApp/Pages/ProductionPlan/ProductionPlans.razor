@@ -101,7 +101,7 @@
         
         var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, ProductionDay ?? 0).ToString("yyyy-MM-dd");
 
-        var url = Configuration["apiUrl"] + $"/api/productionPlan/productionPlan-{selectedDate}.pdf";
+        var url = Configuration["apiUrl"] + $"/api/productionPlan/productionPlan-{selectedDate}.pdf?timestamp=1";
         PrintingService.Print(url);
     }
     
