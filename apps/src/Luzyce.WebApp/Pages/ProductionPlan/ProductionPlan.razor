@@ -105,13 +105,15 @@
                 </td>
                 <td>
                     <input type="number" class="form-control" step="0.01"
-                           value="@item.DocumentPosition.LampshadeNorm.WeightNetto"
-                           @oninput="e => UpdateWeightNettoForSimilarPositions(item.Id, ParseDecimal(e.Value))">
+                           @bind="@item.DocumentPosition.LampshadeNorm.WeightNetto"
+                           @bind:event="oninput"
+                           @onchange="e => UpdateWeightNettoForSimilarPositions(item.Id, item.DocumentPosition.LampshadeNorm.WeightNetto)">
                 </td>
                 <td>
                     <input type="number" class="form-control" step="0.01"
-                           value="@item.DocumentPosition.LampshadeNorm.WeightBrutto"
-                           @oninput="e => UpdateWeightBruttoForSimilarPositions(item.Id, ParseDecimal(e.Value))">
+                           @bind="@item.DocumentPosition.LampshadeNorm.WeightBrutto"
+                           @bind:event="oninput"
+                           @oninput="e => UpdateWeightBruttoForSimilarPositions(item.Id, item.DocumentPosition.LampshadeNorm.WeightBrutto)">
                 </td>
                 <td>
                     <input type="number" class="form-control @(item.DocumentPosition.LampshadeNorm.QuantityPerChange == 0 ? "bg-danger" : "")"
@@ -346,28 +348,16 @@
         
         return null;
     }
-    
-    private decimal? ParseDecimal(object? value)
-    {
-        if (value is null || string.IsNullOrWhiteSpace(value.ToString()))
-        {
-            return null;
-        }
-        
-        if (decimal.TryParse((string?)value, out var result))
-        {
-            return result;
-        }
-        
-        return null;
-    }
-    
+
     private void UpdateWeightNettoForSimilarPositions(int positionId, decimal? newWeightNetto)
     {
         var updatedPosition = GetProductionPlanPositions?.ProductionPlanPositions
             .FirstOrDefault(p => p.Id == positionId);
 
-        if (updatedPosition == null) return;
+        if (updatedPosition == null)
+        {
+            return;
+        }
 
         var lampshadeNormId = updatedPosition.DocumentPosition.LampshadeNorm.Id;
 
