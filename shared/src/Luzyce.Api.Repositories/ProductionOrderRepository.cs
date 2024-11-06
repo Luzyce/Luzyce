@@ -27,7 +27,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         return new GetProductionOrdersResponse
         {
             ProductionOrders = applicationDbContext.Documents
-                .Where(d => d.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID)
+                .Where(d => d.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID && d.StatusId == 1)
                 .Include(d => d.Warehouse)
                 .Include(d => d.DocumentsDefinition)
                 .Include(d => d.Operator)
@@ -636,5 +636,21 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         }
         
         return norms;
+    }
+    
+    public int ArchiveProductionOrder(int id)
+    {
+        var document = applicationDbContext.Documents
+            .FirstOrDefault(d => d.Id == id);
+
+        if (document == null)
+        {
+            return 0;
+        }
+
+        document.StatusId = 6;
+        applicationDbContext.SaveChanges();
+
+        return 1;
     }
 }

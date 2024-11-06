@@ -150,6 +150,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> dbConte
                 Id = 5,
                 Name = "Zakończony",
                 Priority = 50
+            },
+            new()
+            {
+                Id = 6,
+                Name = "Zarchiwizowany",
+                Priority = 60
             }
         };
 

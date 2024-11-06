@@ -94,4 +94,20 @@ public class ProductionOrderController(ProductionOrderRepository productionOrder
         return Ok(productionOrderRepository.GetNorms(getNorms));
     }
     
+    [HttpGet("archive/{id:int}")]
+    [Authorize]
+    public IActionResult ArchiveProductionOrder(int id)
+    {
+        var resp = productionOrderRepository.ArchiveProductionOrder(id);
+        
+        if (resp == 0)
+        {
+            _eventRepository.AddLog(User, "Nie udało się zarchiwizować zlecenia produkcyjnego", JsonSerializer.Serialize(new {id}));
+            return Conflict();
+        }
+
+        _eventRepository.AddLog(User, "Zarchiwizowano zlecenie produkcji", JsonSerializer.Serialize(new {id}));
+
+        return Ok();
+    }
 }

@@ -113,7 +113,7 @@
                     <input type="number" class="form-control" step="0.01"
                            @bind="@item.DocumentPosition.LampshadeNorm.WeightBrutto"
                            @bind:event="oninput"
-                           @oninput="e => UpdateWeightBruttoForSimilarPositions(item.Id, item.DocumentPosition.LampshadeNorm.WeightBrutto)">
+                           @onchange="e => UpdateWeightBruttoForSimilarPositions(item.Id, item.DocumentPosition.LampshadeNorm.WeightBrutto)">
                 </td>
                 <td>
                     <input type="number" class="form-control @(item.DocumentPosition.LampshadeNorm.QuantityPerChange == 0 ? "bg-danger" : "")"

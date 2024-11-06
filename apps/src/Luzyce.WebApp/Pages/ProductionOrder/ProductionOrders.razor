@@ -4,13 +4,14 @@
 @using Luzyce.Shared.Models.ProductionOrder
 @using Luzyce.WebApp.Services
 @inject ProductionOrderService ProductionOrderService
+@inject IJSRuntime JsRuntime
 
 @if (productionOrders == null)
 {
-<p>
-    <em>Ładowanie...</em>
-</p>
-return;
+    <p>
+        <em>Ładowanie...</em>
+    </p>
+    return;
 }
 
 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
@@ -19,58 +20,109 @@ return;
 
 <table class="table">
     <thead>
-    <tr>
-        <th>Data Zam (Subiekt)</th>
-        <th>Numer ZK</th>
-        <th>Nazwa Klienta</th>
-        <th>Data Zlec</th>
-        <th>Numer ZP</th>
-        <th>Termin Realizacji</th>
-        <th>Status</th>
-        <th colspan="2">Akcje</th>
-    </tr>
+        <tr>
+            <th>Data Zam (Subiekt)</th>
+            <th>Numer ZK</th>
+            <th>Nazwa Klienta</th>
+            <th>Data Zlec</th>
+            <th>Numer ZP</th>
+            <th>Termin Realizacji</th>
+            <th>Status</th>
+            <th colspan="3">Akcje</th>
+        </tr>
     </thead>
     <tbody>
-    @foreach (var productionOrder in productionOrders.ProductionOrders)
-    {
-        <tr>
-            <td>@productionOrder.OrderDate.ToString("d", new CultureInfo("pl-PL"))</td>
-            <td>@productionOrder.OrderNumber</td>
-            <td>@productionOrder.CustomerName</td>
-            <td>@productionOrder.ProdOrderDate.ToString("d", new CultureInfo("pl-PL"))</td>
-            <td>@productionOrder.ProdOrderNumber</td>
-            <td>@productionOrder.DeliveryDate?.ToString("d", new CultureInfo("pl-PL"))</td>
-            <td>@productionOrder.Status.Name</td>
-            @* <td>@productionOrder.Id</td> *@
-            @* <td>@productionOrder.Number</td> *@
-            <td>
-                <a class="btn btn-primary btn-sm" href="@($"productionOrder/edit/{productionOrder.Id}")">Edytuj</a>
-            </td>
-            <td>
-                <a type="button" class="btn btn-primary btn-sm" @onclick="() => ShowDependencyChart(productionOrder.Id)">Wykres zależności</a>
-            </td>
-        </tr>
-    }
+        @foreach (var productionOrder in productionOrders.ProductionOrders)
+        {
+            <tr>
+                <td>@productionOrder.OrderDate.ToString("d", new CultureInfo("pl-PL"))</td>
+                <td>@productionOrder.OrderNumber</td>
+                <td>@productionOrder.CustomerName</td>
+                <td>@productionOrder.ProdOrderDate.ToString("d", new CultureInfo("pl-PL"))</td>
+                <td>@productionOrder.ProdOrderNumber</td>
+                <td>@productionOrder.DeliveryDate?.ToString("d", new CultureInfo("pl-PL"))</td>
+                <td>@productionOrder.Status.Name</td>
+                <td>
+                    <a class="btn btn-primary btn-sm" href="@($"productionOrder/edit/{productionOrder.Id}")">Edytuj</a>
+                </td>
+                <td>
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#archiveModal" 
+                            @onclick="() => SetSelectedDocumentId(productionOrder.Id)">
+                        Zarchiwizuj
+                    </button>
+                </td>
+                <td>
+                    <a type="button" class="btn btn-primary btn-sm" @onclick="() => ShowDependencyChart(productionOrder.Id)">
+                        Wykres zależności
+                    </a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
+
+<div class="modal fade" id="archiveModal" tabindex="-1" aria-labelledby="archiveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="archiveModalLabel">Potwierdzenie zapisu</h5>
+            </div>
+            <div class="modal-body">
+                Czy na pewno chcesz zapisać zmiany?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Powrót</button>
+                <button type="button" class="btn btn-primary" @onclick="OnSave">Zapisz</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @if (request != null)
 {
     <DocumentDependencyChart Request="@request"/>
 }
 
+<script>
+    window.closeModalById = (modalId) => {
+        const modalElement = document.getElementById(modalId);
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+    };
+</script>
+
 @code {
     private GetProductionOrdersResponse? productionOrders;
     private GetDocumentDependencyChartRequest? request;
+    private int? selectedDocumentId;
 
     protected override async Task OnInitializedAsync()
     {
-       productionOrders = await ProductionOrderService.GetProductionOrders();
+        productionOrders = await ProductionOrderService.GetProductionOrders();
     }
 
     private Task ShowDependencyChart(int productionOrderId)
     {
         request = new GetDocumentDependencyChartRequest { DocumentId = productionOrderId, DocumentType = "Zlecenie produkcji" };
         return Task.CompletedTask;
+    }
+
+    private void SetSelectedDocumentId(int documentId)
+    {
+        selectedDocumentId = documentId;
+    }
+
+    private async Task OnSave()
+    {
+        if (selectedDocumentId.HasValue)
+        {
+            await ProductionOrderService.ArchiveProductionOrder(selectedDocumentId.Value);
+            productionOrders?.ProductionOrders.RemoveAll(x => x.Id == selectedDocumentId.Value);
+            selectedDocumentId = null; 
+            await JsRuntime.InvokeVoidAsync("closeModalById", "archiveModal");
+            StateHasChanged();
+        }
     }
 }

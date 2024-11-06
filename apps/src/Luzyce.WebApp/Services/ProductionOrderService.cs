@@ -66,15 +66,14 @@ public class ProductionOrderService(HttpClient httpClient, TokenValidationServic
 
         return null;
     }
-    
-    public async Task<bool> UpdateRemarkAsync(int id, UpdateRemark updateRemark)
+
+    public async Task<bool> ArchiveProductionOrder(int id)
     {
         if (!await tokenValidationService.IsTokenValid())
         {
             return false;
         }
-        var response = await httpClient.PostAsJsonAsync($"/api/productionOrder/updateRemark/{id}", updateRemark);
-        return response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Unauthorized && response.StatusCode != HttpStatusCode.Conflict;
+        var response = await httpClient.GetAsync($"/api/productionOrder/archive/{id}");
+        return response.IsSuccessStatusCode;
     }
-
 }
