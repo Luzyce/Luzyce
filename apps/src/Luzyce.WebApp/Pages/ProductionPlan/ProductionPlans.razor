@@ -3,6 +3,7 @@
 @inject NavigationManager Navigation
 @inject IPrintingService PrintingService
 @inject IConfiguration Configuration
+@inject IJSRuntime JsRuntime
 
 <style>
     .legend {
@@ -34,11 +35,22 @@
 
 <div class="row">
     <div class="col">
+        <h6>Wydrukuj Plan Produkcji:</h6>
         <div class="input-group" style="width: 30%">
-            <input type="number" class="form-control" aria-describedby="wydrukuj" min="1" max="@MaxDaysInMonth" 
-                   @onchange="e => OnSelectedDayChanged(e.Value)">
-            <button class="btn btn-outline-secondary" type="button" id="wydrukuj" 
-                   @onclick="PrintProductionPlan" disabled="@isButtonDisabled">Wydrukuj</button>
+            <input type="number" class="form-control" min="1" max="@MaxDaysInMonth"
+                   @bind-value="ProductionDay" @bind-value:event="oninput" @onchange="e => OnProdPlanDayChanged(e.Value)">
+            <button class="btn btn-outline-secondary" type="button" id="printProdPlan"
+                    @onclick="PrintProductionPlan" disabled="@isProductionPlanPrintDisabled">Wydrukuj</button>
+        </div>
+        <br>
+        <h6>Wydrukuj Raport Produkcji:</h6>
+        <div class="input-group" style="width: 35%">
+            <input type="number" class="form-control" min="1" max="@MaxDaysInMonth" 
+                   @bind-value="ReportDay" @bind-value:event="oninput" @onchange="e => OnPlanRepDayChanged(e.Value)">
+            <input type="number" class="form-control" min="1" max="3"
+                   @bind-value="ReportShift" @bind-value:event="oninput" @onchange="e => OnPlanRepShiftChanged(e.Value)">
+            <button class="btn btn-outline-secondary" type="button" id="printProdReport"
+                    @onclick="PrintProductionRep" disabled="@isProdRepPrintDisabled">Wydrukuj</button>
         </div>
     </div>
     <div class="col">
@@ -54,14 +66,23 @@
 
 
 @code {
-    private ProductionPlansCalendar productionPlansCalendar = new ProductionPlansCalendar();
-    private int SelectedDay { get; set; } = 1;
-    private bool isButtonDisabled;
+    private ProductionPlansCalendar productionPlansCalendar = new();
+    private int? ProductionDay { get; set; }
+    private int? ReportDay { get; set; }
+    private int? ReportShift { get; set; }
+    private bool isProductionPlanPrintDisabled = true;
+    private bool isProdRepPrintDisabled = true;
 
     private int MaxDaysInMonth => DateTime.DaysInMonth(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month);
 
     private void UpdateMaxDaysInMonth()
     {
+        isProductionPlanPrintDisabled = true;
+        isProdRepPrintDisabled = true;
+        ReportDay = null;
+        ReportShift = null;
+        ProductionDay = null;
+        
         StateHasChanged();
     }
 
@@ -73,25 +94,68 @@
 
     private void PrintProductionPlan()
     {
-        var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, SelectedDay).ToString("yyyy-MM-dd");
+        if (ProductionDay == null)
+        {
+            return;
+        }
+        
+        var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, ProductionDay ?? 0).ToString("yyyy-MM-dd");
 
         var url = Configuration["apiUrl"] + $"/api/productionPlan/productionPlan-{selectedDate}.pdf";
         PrintingService.Print(url);
     }
     
-    private void OnSelectedDayChanged(object? objValue)
+    private async Task PrintProductionRep()
     {
-        if (objValue == null)
+        if (ReportDay == null || ReportShift == null)
         {
             return;
         }
         
-        SelectedDay = int.Parse((string)objValue);
+        var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, ReportDay ?? 0).ToString("yyyy-MM-dd");
+
+        var url = Configuration["apiUrl"] + $"/api/productionRaport/downloadExcel/{selectedDate}/{ReportShift}";
+        await JsRuntime.InvokeVoidAsync("open", url, "_blank");
+    }
+    
+    private void OnProdPlanDayChanged(object? objValue)
+    {
+        if (objValue == null || string.IsNullOrWhiteSpace(objValue.ToString()))
+        {
+            isProductionPlanPrintDisabled = true;
+            return;
+        }
         
-        var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, SelectedDay);
+        var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, int.Parse((string)objValue));
         if (productionPlansCalendar.productionPlans != null)
         {
-            isButtonDisabled = productionPlansCalendar.productionPlans.Any(p => p.Date == selectedDate && p.Status?.Id == 1);
+            isProductionPlanPrintDisabled = productionPlansCalendar.productionPlans.Any(p => p.Date == selectedDate && p.Status?.Id == 1);
         }
+    }
+    
+    private void OnPlanRepDayChanged(object? objValue)
+    {
+        if (objValue == null || string.IsNullOrWhiteSpace(objValue.ToString()) || ReportShift == null)
+        {
+            isProdRepPrintDisabled = true;
+            return;
+        }
+        
+        var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, int.Parse((string)objValue));
+        if (productionPlansCalendar.productionPlans != null)
+        {
+            isProdRepPrintDisabled = productionPlansCalendar.productionPlans.Any(p => p.Date == selectedDate && p.Status?.Id == 1);
+        }
+    }
+    
+    private void OnPlanRepShiftChanged(object? objValue)
+    {
+        if (objValue == null || string.IsNullOrWhiteSpace(objValue.ToString()))
+        {
+            isProdRepPrintDisabled = true;
+            return;
+        }
+        
+        isProdRepPrintDisabled = false;
     }
 }
