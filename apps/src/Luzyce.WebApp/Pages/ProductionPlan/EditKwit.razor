@@ -40,7 +40,7 @@
 
 <br>
 
-<a type="button" class="btn btn-primary" href="/productionPlan?dateString=@DateString&shift=@Shift&team=@Team">Powrót</a>
+<a type="button" class="btn btn-primary" href="/productionPlan/edit?dateString=@DateString&shift=@Shift&team=@Team">Powrót</a>
 
 <div style="float: right">
     <a type="button" class="btn btn-primary" @onclick="() => ShowDependencyChart(kwit.Id)">Wykres zależności</a>
@@ -102,7 +102,7 @@
     {
         if (KwitId < 1)
         {
-            NavManager.NavigateTo("/productionPlans");
+            NavManager.NavigateTo("/productionPlan");
             return;
         }
 
@@ -151,7 +151,7 @@
             QuantityLoss = kwit.QuantityLoss,
             QuantityToImprove = kwit.QuantityToImprove,
         });
-        NavManager.NavigateTo($"/productionPlan?dateString={DateString}&shift={Shift}&team={Team}");
+        NavManager.NavigateTo($"/productionPlan/edit?dateString={DateString}&shift={Shift}&team={Team}");
     }
 
     private Task ShowDependencyChart(int kwitId)

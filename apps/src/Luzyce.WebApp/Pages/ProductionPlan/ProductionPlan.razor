@@ -1,4 +1,4 @@
-﻿@page "/productionPlan"
+﻿@page "/productionPlan/edit"
 @using System.Globalization
 @using Append.Blazor.Printing
 @using Luzyce.Shared.Models.DocumentDependencyChart
@@ -167,11 +167,11 @@
 </div>
 
 
-<a class="btn btn-secondary" href="/productionPlans" role="button">Powrót</a>
+<a class="btn btn-secondary" href="/productionPlan" role="button">Powrót</a>
 <div style="float: right">
     <a class="btn btn-primary" href="/productionPriority/new?dateString=@DateString&shift=@Shift&team=@Team" role="button">Dodaj pozycje</a>
     <a type="button" class="btn btn-primary" @onclick="() => ShowDependencyChart(GetProductionPlanPositions.Id)">Wykres zależności</a>
-    <a class="btn btn-primary" href="/productionPlans" role="button" @onclick="OnSave">Zapisz</a>
+    <a class="btn btn-primary" href="/productionPlan" role="button" @onclick="OnSave">Zapisz</a>
 </div>
 
 <div class="modal fade" id="remarksModal" tabindex="-1" aria-labelledby="remarksModal" aria-hidden="true">
@@ -281,7 +281,7 @@
 
         if (resp)
         {
-            NavigationManager.NavigateTo("/productionPlans");
+            NavigationManager.NavigateTo("/productionPlan");
         }
     }
 

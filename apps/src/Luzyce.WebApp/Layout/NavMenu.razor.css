@@ -1,3 +1,9 @@
+.nav-link.active {
+    background-color: #0056b3;
+    color: white;
+    font-weight: bold;
+}
+
 .navbar-toggler {
     background-color: rgba(255, 255, 255, 0.1);
 }

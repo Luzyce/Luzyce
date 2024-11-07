@@ -346,7 +346,7 @@
 
         await ProdPrioritiesService.AddPositionsToProductionPlanAsync(addPositionsToProductionPlan);
         await JSRuntime.InvokeVoidAsync("closeModal");
-        NavigationManager.NavigateTo($"/productionPlan?dateString={date.ToString("yyyy-MM-dd")}&shift={shift}&team={team}");
+        NavigationManager.NavigateTo($"/productionPlan/edit?dateString={date.ToString("yyyy-MM-dd")}&shift={shift}&team={team}");
     }
 
     private void OpenRemark(GetProductionOrderPosition position)

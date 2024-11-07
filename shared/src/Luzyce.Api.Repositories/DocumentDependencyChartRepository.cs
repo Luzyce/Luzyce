@@ -145,7 +145,7 @@ public class DocumentDependencyChartRepository(ApplicationDbContext applicationD
         Name = $"PP {productionPlan.Date:dd.MM.yyyy} " +
                $"Zmiana: {productionPlan.Shift?.ShiftNumber} " +
                $"Zespół: {productionPlan.Team}",
-        AddrToRedirect = $"/productionPlan?dateString={productionPlan.Date.ToString("yyyy-MM-dd")}&" +
+        AddrToRedirect = $"/productionPlan/edit?dateString={productionPlan.Date.ToString("yyyy-MM-dd")}&" +
                          $"shift={productionPlan.Shift?.ShiftNumber}&" +
                          $"team={productionPlan.Team}",
         Positions = productionPlan.Positions.Select(
