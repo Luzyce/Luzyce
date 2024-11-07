@@ -7,7 +7,7 @@ namespace Luzyce.Api.Controllers;
 [Route("api/workflow")]
 public class WorkflowController(WorkflowRepository workflowRepo, EventRepository eventRepository) : Controller
 {
-    [HttpGet]
+    [HttpGet("getIps")]
     public IActionResult GetIps()
     {
         var ips = workflowRepo.GetIps();
