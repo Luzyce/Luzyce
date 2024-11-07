@@ -16,5 +16,6 @@ public class GetProductionOrder
     public DateTime UpdatedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
     public GetStatusResponseDto? Status { get; set; } = new GetStatusResponseDto();
+    public string ClientName { get; set; } = string.Empty;
     public List<GetProductionOrderPosition>? Positions { get; set; } = [];
 }

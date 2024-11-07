@@ -69,7 +69,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
             .Include(d => d.Warehouse)
             .Include(d => d.DocumentsDefinition)
             .Include(d => d.Operator)
-            .Include(d => d.Status)
+            .Include(d => d.Status).Include(document => document.Order!).ThenInclude(orderForProduction => orderForProduction.Customer!)
             .FirstOrDefault();
 
         if (document == null)
@@ -175,6 +175,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                 Name = document.Status.Name,
                 Priority = document.Status.Priority
             },
+            ClientName = document.Order?.Customer?.Name ?? "",
             Positions = positions
         };
     }
