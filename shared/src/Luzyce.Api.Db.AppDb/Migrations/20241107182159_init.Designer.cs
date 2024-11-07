@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Luzyce.Api.Db.AppDb.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241021152014_addToMonoRepo")]
-    partial class addToMonoRepo
+    [Migration("20241107182159_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -61,14 +61,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Customers");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Test",
-                            Symbol = "TST"
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.CustomerLampshade", b =>
@@ -170,35 +162,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.HasIndex("WarehouseId");
 
                     b.ToTable("Documents");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CreatedAt = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(3996),
-                            DocNumber = 1,
-                            DocumentsDefinitionId = 1,
-                            Number = "M/0001/KW/2024",
-                            OperatorId = 1,
-                            ProductionPlanPositionsId = 1,
-                            StatusId = 1,
-                            UpdatedAt = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(4023),
-                            WarehouseId = 1,
-                            Year = 2023
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(4053),
-                            DocNumber = 1,
-                            DocumentsDefinitionId = 2,
-                            Number = "P/0001/ZP/2024",
-                            OperatorId = 1,
-                            StatusId = 1,
-                            UpdatedAt = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(4085),
-                            WarehouseId = 2,
-                            Year = 2024
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.DocumentItemRelationships", b =>
@@ -312,41 +275,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.HasIndex("OrderPositionForProductionId");
 
                     b.ToTable("DocumentPositions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            DocumentId = 1,
-                            LampshadeDekor = "",
-                            LampshadeId = 1,
-                            OperatorId = 1,
-                            QuantityGross = 0,
-                            QuantityLoss = 0,
-                            QuantityNetto = 0,
-                            QuantityToImprove = 0,
-                            Remarks = "",
-                            StartTime = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(4858)
-                        },
-                        new
-                        {
-                            Id = 2,
-                            DocumentId = 2,
-                            LampshadeDekor = "F",
-                            LampshadeId = 1,
-                            LampshadeNormId = 1,
-                            OperatorId = 1,
-                            OrderPositionForProductionId = 1,
-                            QuantityGross = 0,
-                            QuantityLoss = 0,
-                            QuantityNetto = 0,
-                            QuantityToImprove = 0,
-                            Remarks = "Test",
-                            StartTime = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(4883),
-                            SubiektProductId = 2628,
-                            po_NumberOfChanges = 1m,
-                            po_QuantityMade = 0
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.DocumentRelations", b =>
@@ -683,13 +611,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Lampshades");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Code = "KL4124"
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.LampshadeNorm", b =>
@@ -728,19 +649,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.HasIndex("VariantId");
 
                     b.ToTable("LampshadeNorms");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            LampshadeId = 1,
-                            MethodOfPackaging = "300x300x110",
-                            QuantityPerChange = 50,
-                            QuantityPerPack = 16,
-                            VariantId = 1,
-                            WeightBrutto = 3m,
-                            WeightNetto = 0.45m
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.LampshadeVariant", b =>
@@ -937,16 +845,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.HasIndex("CustomerId");
 
                     b.ToTable("OrdersForProduction");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            CustomerId = 1,
-                            Date = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(4536),
-                            Number = "1",
-                            OriginalNumber = "1"
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.OrderPositionForProduction", b =>
@@ -1006,25 +904,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("OrderPositionsForProduction");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Description = "Test",
-                            OrderId = 1,
-                            OrderNumber = "1",
-                            OrderPositionLp = 1,
-                            ProductDescription = "Test",
-                            ProductId = 1,
-                            ProductName = "KL4124",
-                            ProductSymbol = "KL4124",
-                            Quantity = 1m,
-                            QuantityInStock = 1m,
-                            SerialNumber = "1",
-                            Symbol = "TEST",
-                            Unit = "szt"
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.ProductionPlan", b =>
@@ -1063,17 +942,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                         {
                             t.HasCheckConstraint("CK_ProductionPlans_Team_Range", "`Team` BETWEEN 1 AND 3");
                         });
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Date = new DateOnly(2024, 10, 21),
-                            HeadsOfMetallurgicalTeamsId = 1,
-                            ShiftId = 1,
-                            StatusId = 1,
-                            Team = 1
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.ProductionPlanPositions", b =>
@@ -1101,16 +969,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.HasIndex("ProductionPlanId");
 
                     b.ToTable("ProductionPlanPositions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            DocumentPositionId = 2,
-                            NumberOfHours = 8,
-                            ProductionPlanId = 1,
-                            Quantity = 50
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.Role", b =>
@@ -1173,15 +1031,6 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                         {
                             t.HasCheckConstraint("CK_Shifts_ShiftNumber_Range", "`ShiftNumber` BETWEEN 1 AND 3");
                         });
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Date = new DateOnly(2024, 10, 21),
-                            ShiftNumber = 1,
-                            ShiftSupervisorId = 1
-                        });
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.Status", b =>
@@ -1225,6 +1074,18 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                             Id = 4,
                             Name = "Anulowany",
                             Priority = 40
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Name = "Zakończony",
+                            Priority = 50
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Name = "Zarchiwizowany",
+                            Priority = 60
                         });
                 });
 
@@ -1273,36 +1134,14 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2024, 10, 21, 17, 20, 13, 727, DateTimeKind.Unspecified).AddTicks(7055),
+                            CreatedAt = new DateTime(2024, 11, 7, 19, 21, 58, 858, DateTimeKind.Unspecified).AddTicks(7925),
                             Email = "admin@gmail.com",
                             Hash = "admin",
                             LastName = "Admin",
                             Login = "admin",
                             Name = "Admin",
-                            Password = "$2a$11$a0fgRYbs72EBzpyjvYYu..C4ntyl3i8hYq4i3iugZy9o14M2mVBqW",
+                            Password = "$2a$11$suc4Ti3dLipBAZlbJGamxO2JjvQRHiNgdH5tJDcfI7mYCICCL0XRG",
                             RoleId = 1
-                        },
-                        new
-                        {
-                            Id = 2,
-                            CreatedAt = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(3266),
-                            Hash = "",
-                            LastName = "Hutmustrz",
-                            Login = "",
-                            Name = "Przykładowy",
-                            Password = "",
-                            RoleId = 3
-                        },
-                        new
-                        {
-                            Id = 3,
-                            CreatedAt = new DateTime(2024, 10, 21, 17, 20, 13, 838, DateTimeKind.Unspecified).AddTicks(3489),
-                            Hash = "",
-                            LastName = "Hutnik",
-                            Login = "",
-                            Name = "Przykładowy",
-                            Password = "",
-                            RoleId = 4
                         });
                 });
 
