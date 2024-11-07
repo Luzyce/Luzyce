@@ -14,9 +14,23 @@
     return;
 }
 
-<div class="d-grid gap-2 d-md-flex justify-content-md-end">
-    <a class="btn btn-primary" href="@("productionOrder/new")">Nowe Zlecenie Produkcji</a>
+<div class="row">
+    <div class="col form-group">
+        <label>Statusy:</label>
+        <select class="form-select" @bind="status" @oninput="OnStatusChanged">
+            <option value="1">Otwarte</option>
+            <option value="6">Zarchiwizowane</option>
+            <option value="0">Wszystkie</option>
+        </select>
+    </div>
+    <div class="col form-group">
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a class="btn btn-primary" href="@("productionOrder/new")">Nowe Zlecenie Produkcji</a>
+        </div>
+    </div>
 </div>
+
+<br/>
 
 <table class="table">
     <thead>
@@ -46,8 +60,9 @@
                     <a class="btn btn-primary btn-sm" href="@($"productionOrder/edit/{productionOrder.Id}")">Edytuj</a>
                 </td>
                 <td>
-                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#archiveModal" 
-                            @onclick="() => SetSelectedDocumentId(productionOrder.Id)">
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#archiveModal"
+                            @onclick="() => SetSelectedDocumentId(productionOrder.Id)"
+                            disabled="@(productionOrder.Status.Id == 6)">
                         Zarchiwizuj
                     </button>
                 </td>
@@ -97,10 +112,20 @@
     private GetProductionOrdersResponse? productionOrders;
     private GetDocumentDependencyChartRequest? request;
     private int? selectedDocumentId;
+    private int status = 1;
+    
+    private CancellationTokenSource cts = new();
 
     protected override async Task OnInitializedAsync()
     {
-        productionOrders = await ProductionOrderService.GetProductionOrders();
+        productionOrders = await ProductionOrderService.GetProductionOrders(status);
+    }
+    
+    private async Task OnStatusChanged(ChangeEventArgs e)
+    {
+        status = int.Parse(e.Value?.ToString() ?? string.Empty);
+        productionOrders = await ProductionOrderService.GetProductionOrders(status);
+        StateHasChanged();
     }
 
     private Task ShowDependencyChart(int productionOrderId)

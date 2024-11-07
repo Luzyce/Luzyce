@@ -22,12 +22,20 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
 {
     private readonly ApplicationDbContext applicationDbContext = applicationDbContext;
 
-    public GetProductionOrdersResponse GetProductionOrders()
+    public GetProductionOrdersResponse GetProductionOrders(int status = 0)
     {
+        var statusesToShow = status switch {
+            0 =>
+            [
+                1, 2, 3, 4, 5, 6
+            ],
+            _ => new List<int> {status}
+        };
+        
         return new GetProductionOrdersResponse
         {
             ProductionOrders = applicationDbContext.Documents
-                .Where(d => d.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID && d.StatusId == 1)
+                .Where(d => d.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID && statusesToShow.Contains(d.StatusId))
                 .Include(d => d.Warehouse)
                 .Include(d => d.DocumentsDefinition)
                 .Include(d => d.Operator)

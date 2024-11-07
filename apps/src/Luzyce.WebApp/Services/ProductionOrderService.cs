@@ -6,13 +6,21 @@ namespace Luzyce.WebApp.Services;
 
 public class ProductionOrderService(HttpClient httpClient, TokenValidationService tokenValidationService)
 {
-    public async Task<GetProductionOrdersResponse?> GetProductionOrders()
+    public async Task<GetProductionOrdersResponse?> GetProductionOrders(int status = 0)
     {
         if (!await tokenValidationService.IsTokenValid())
         {
             return null;
         }
-        return await httpClient.GetFromJsonAsync<GetProductionOrdersResponse>($"/api/productionOrder");
+        
+        var response = await httpClient.PostAsJsonAsync("/api/productionOrder", new GetProdOrdersRequest {Status = status});
+        
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<GetProductionOrdersResponse>();
+        }
+        
+        return null;
     }
     
     public async Task<GetProductionOrder?> GetProductionOrder(int id)
