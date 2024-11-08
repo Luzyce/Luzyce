@@ -4,7 +4,6 @@ about: Zgłoś błąd a my go naprawimy
 title: "[BUG] "
 labels: bug
 assignees: ddnowicki
-
 ---
 
 **Opisz ten błąd**
@@ -23,13 +22,8 @@ Jasny i zwięzły opis tego, czego się spodziewałeś.
 **Zrzuty ekranu**
 Jeżeli to możliwe to dodaj zrzuty ekranu, aby wyjaśnić problem.
 
-**Komputer stacjonarny (proszę uzupełnić poniższe informacje):**
+**Ważne informacje (proszę uzupełnić poniższe informacje):**
  - OS: [np. Windows]
- - Przeglądarka [np. Chrome]
-
-**Smartfon (proszę uzupełnić poniższe informacje):**
- - Urządzenie: [np. iPhone6]
- - OS: [np. iOS8.1]
  - Przeglądarka [np. Chrome]
 
 **Dodatkowy kontekst**
