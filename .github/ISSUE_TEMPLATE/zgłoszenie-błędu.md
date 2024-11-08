@@ -1,13 +1,13 @@
 ---
 name: Zgłoszenie błędu
 about: Zgłoś błąd a my go naprawimy
-title: "[BUG]"
+title: "[BUG] "
 labels: bug
 assignees: ddnowicki
 
 ---
 
-**Opisz ten błąd*
+**Opisz ten błąd**
 Jasny i zwięzły opis błędu.
 
 **Odtwórz kroki**
