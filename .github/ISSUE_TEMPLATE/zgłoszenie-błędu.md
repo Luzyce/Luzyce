@@ -4,6 +4,7 @@ about: Zgłoś błąd a my go naprawimy
 title: "[BUG] "
 labels: bug
 assignees: ddnowicki
+
 ---
 
 **Opisz ten błąd**
