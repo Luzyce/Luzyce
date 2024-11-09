@@ -139,10 +139,10 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         doc.ShowTextAligned(new Paragraph(kwit.Number).SetFontSize(20),
             15, 780, 1, TextAlignment.LEFT, iTextVerticalAlignment.TOP, 0);
         
-        doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftNumber.ToString()).SetFontSize(16),
+        doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.Team.ToString()).SetFontSize(16),
             85, 610, 1, TextAlignment.CENTER, iTextVerticalAlignment.MIDDLE, 0);
         
-        doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.Team.ToString()).SetFontSize(16),
+        doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftNumber.ToString()).SetFontSize(16),
             138, 610, 1, TextAlignment.CENTER, iTextVerticalAlignment.MIDDLE, 0);
         
         doc.ShowTextAligned(new Paragraph(totalHours.ToString(CultureInfo.CurrentCulture)).SetFontSize(16),
@@ -201,7 +201,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
                 page.DefaultTextStyle(x => x.FontSize(20));
     
                 page.Header()
-                    .Text($"Plan produkcji na {data.ToString("d")}")
+                    .Text($"Plan produkcji na {data.ToString("dd.MM.yyyy")}")
                     .SemiBold().FontSize(36);
     
                 page.Content()
