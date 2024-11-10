@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Luzyce.Core" Version="10.0.50" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.8" />
   </ItemGroup>
   <ItemGroup>

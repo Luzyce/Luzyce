@@ -8,7 +8,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 
 COPY ["apps/src/Luzyce.WebApp/Luzyce.WebApp.csproj", "apps/src/Luzyce.WebApp/"]
-COPY ["shared/src/Luzyce.Core/Luzyce.Core.csproj", "shared/src/Luzyce.Core/"]
+COPY ["shared/src/Luzyce.Shared/Luzyce.Shared.csproj", "shared/src/Luzyce.Shared/"]
 RUN dotnet restore "apps/src/Luzyce.WebApp/Luzyce.WebApp.csproj"
 COPY . .
 WORKDIR "/src/apps/src/Luzyce.WebApp"

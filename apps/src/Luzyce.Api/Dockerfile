@@ -7,7 +7,7 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["apps/src/Luzyce.Api/Luzyce.Api.csproj", "apps/src/Luzyce.Api/"]
-COPY ["shared/src/Luzyce.Core/Luzyce.Core.csproj", "shared/src/Luzyce.Core/"]
+COPY ["shared/src/Luzyce.Shared/Luzyce.Shared.csproj", "shared/src/Luzyce.Shared/"]
 COPY ["shared/src/Luzyce.Api.Core/Luzyce.Api.Core.csproj", "shared/src/Luzyce.Api.Core/"]
 COPY ["shared/src/Luzyce.Api.Repositories/Luzyce.Api.Repositories.csproj", "shared/src/Luzyce.Api.Repositories/"]
 COPY ["shared/src/Luzyce.Api.Domain/Luzyce.Api.Domain.csproj", "shared/src/Luzyce.Api.Domain/"]
