@@ -147,6 +147,7 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
     {
         var kwit = applicationDbContext.Documents
             .Include(d => d.DocumentPositions)
+            .Include(document => document.Lacks).ThenInclude(kwitLack => kwitLack.Lack)
             .FirstOrDefault(x => x.Id == updateKwit.Id);
         if (kwit == null)
         {
@@ -182,6 +183,15 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
             {
                 kwitLack.Quantity = lack.Quantity ?? 0;
             }
+        }
+        
+        var removedLacks = kwit.Lacks
+            .Where(l => updateKwit.Lacks.All(ul => ul.ErrorCode != l.Lack?.Code))
+            .ToList();
+        
+        foreach (var removedLack in removedLacks)
+        {
+            applicationDbContext.KwitLacks.Remove(removedLack);
         }
         
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();

@@ -76,7 +76,7 @@
         <tr>
             <td>@lack.ErrorName (@lack.ErrorCode)</td>
             <td>
-                <input type="number" class="form-control" @bind="lack.Quantity" min="0">
+                <input type="number" class="form-control" @bind="lack.Quantity" min="0" @bind:after="UpdateNewLossQuantity">
             </td>
             <td>
                 <button class="btn btn-danger" @onclick="() => RemoveLack(lack)">Usuń</button>
@@ -215,6 +215,8 @@
         
         updatedLacks = updatedLacks.OrderBy(l => l.ErrorCode).ToList();
         
+        selectedErrorCode = null;
+        
         StateHasChanged();
     }
 
@@ -223,5 +225,10 @@
         updatedLacks.Remove(lack);
         newLossQuantity = updatedLacks.Sum(l => l.Quantity) ?? 0;
         StateHasChanged();
+    }
+    
+    private void UpdateNewLossQuantity()
+    {
+        newLossQuantity = updatedLacks.Sum(l => l.Quantity) ?? 0;
     }
 }
