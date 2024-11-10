@@ -6,4 +6,5 @@ public class UpdateKwit
     public int QuantityNetto { get; set; } // from KwitPosition
     public int QuantityLoss { get; set; } // from KwitPosition
     public int QuantityToImprove { get; set; } // from KwitPosition
+    public List<GetLacks> Lacks { get; set; } = [];
 }

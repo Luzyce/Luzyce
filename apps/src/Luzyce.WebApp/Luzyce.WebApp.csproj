@@ -16,6 +16,6 @@
         <PackageReference Include="Z.Blazor.Diagrams" Version="3.0.2" />
     </ItemGroup>
     <ItemGroup>
-      <ProjectReference Include="..\..\..\shared\src\Luzyce.Core\Luzyce.Core.csproj" />
+      <ProjectReference Include="..\..\..\shared\src\Luzyce.Shared\Luzyce.Shared.csproj" />
     </ItemGroup>
 </Project>

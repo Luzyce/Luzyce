@@ -23,6 +23,8 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
             .Include(d => d.LockedBy)
             .Include(d => d.ProductionPlanPositions)
             .Include(d => d.DocumentPositions)
+            .Include(d => d.Lacks)
+            .ThenInclude(l => l.Lack)
             .FirstOrDefault(x => x.Id == id);
 
         if (kwit == null)
@@ -30,34 +32,21 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
             return null;
         }
 
-        var operationWithErrorsInKwit = applicationDbContext.Operations
-            .Include(x => x.ErrorCode)
-            .Where(x => x.DocumentId == id &&
-                        x.QuantityLossDelta > 0 &&
-                        x.IsCancelled == false)
-            .ToList();
+        var allErrorCodes = applicationDbContext.Errors.OrderBy(e => e.Id).ToList();
 
-        var lacks = new List<GetLacks>();
-        foreach (var operation in operationWithErrorsInKwit)
+        var lacks = allErrorCodes.Select(errorCode =>
         {
-            if (operation.ErrorCode == null || lacks.Any(x => x.ErrorName == operation.ErrorCode.Name))
+            var quantity = kwit.Lacks
+                .Where(op => op.LackId == errorCode.Id)
+                .Sum(op => op.Quantity);
+        
+            return new GetLacks
             {
-                continue;
-            }
-
-            lacks.Add(new GetLacks
-            {
-                Quantity = operationWithErrorsInKwit
-                    .Where(x => x.ErrorCodeId == operation.ErrorCodeId)
-                    .Sum(x => x.QuantityLossDelta),
-                ErrorName = operation.ErrorCode.Name,
-                ErrorCode = operation.ErrorCode.Code
-            });
-        }
-
-        lacks = lacks.OrderBy(x =>
-            operationWithErrorsInKwit.FirstOrDefault(o => o.ErrorCode?.Name == x.ErrorName)?.ErrorCodeId
-        ).ToList();
+                Quantity = quantity,
+                ErrorName = errorCode.Name,
+                ErrorCode = errorCode.Code
+            };
+        }).OrderBy(lack => lack.ErrorCode).ToList();
 
         return new GetKwit
         {
@@ -167,6 +156,34 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         kwit.DocumentPositions.First().QuantityNetto = updateKwit.QuantityNetto;
         kwit.DocumentPositions.First().QuantityLoss = updateKwit.QuantityLoss;
         kwit.DocumentPositions.First().QuantityToImprove = updateKwit.QuantityToImprove;
+        
+        foreach (var lack in updateKwit.Lacks)
+        {
+            var error = applicationDbContext.Errors
+                .FirstOrDefault(x => x.Code == lack.ErrorCode);
+            if (error == null)
+            {
+                continue;
+            }
+
+            var kwitLack = applicationDbContext.KwitLacks
+                .FirstOrDefault(x => x.LackId == error.Id && x.KwitId == updateKwit.Id);
+            if (kwitLack == null)
+            {
+                kwitLack = new KwitLack
+                {
+                    LackId = error.Id,
+                    KwitId = updateKwit.Id,
+                    Quantity = lack.Quantity ?? 0
+                };
+                applicationDbContext.KwitLacks.Add(kwitLack);
+            }
+            else
+            {
+                kwitLack.Quantity = lack.Quantity ?? 0;
+            }
+        }
+        
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
         applicationDbContext.SaveChanges();
     }
@@ -403,6 +420,43 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
             ShortName = error.ShortName,
             Name = error.Name
         };
+    }
+    
+    public void UpdateLack(char type, string errorCode, int kwitId)
+    {
+        var error = applicationDbContext.Errors
+            .FirstOrDefault(x => x.Code == errorCode);
+
+        if (error == null)
+        {
+            return;
+        }
+
+        var lack = applicationDbContext.KwitLacks
+            .FirstOrDefault(x => x.LackId == error.Id);
+
+        if (lack == null)
+        {
+            lack = new KwitLack
+            {
+                LackId = error.Id,
+                KwitId = kwitId,
+                Quantity = 0
+            };
+            applicationDbContext.KwitLacks.Add(lack);
+        }
+
+        switch (type)
+        {
+            case '+':
+                lack.Quantity++;
+                break;
+            case '-':
+                lack.Quantity--;
+                break;
+        }
+
+        applicationDbContext.SaveChanges();
     }
 
     private static Luzyce.Api.Domain.Models.Warehouse WarehouseDomainFromDb(Warehouse warehouse)

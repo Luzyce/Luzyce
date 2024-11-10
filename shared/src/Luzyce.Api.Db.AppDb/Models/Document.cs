@@ -30,5 +30,6 @@ public class Document
     public int? ProductionPlanPositionsId { get; set; }
     public ProductionPlanPositions? ProductionPlanPositions { get; set; }
     
+    public List<KwitLack> Lacks { get; set; } = [];
     public List<DocumentPositions> DocumentPositions { get; set; } = [];
 }

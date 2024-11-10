@@ -595,6 +595,30 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.KwitLack", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<int>("KwitId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LackId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KwitId");
+
+                    b.HasIndex("LackId");
+
+                    b.ToTable("KwitLacks");
+                });
+
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.Lampshade", b =>
                 {
                     b.Property<int>("Id")
@@ -1131,13 +1155,13 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2024, 11, 7, 19, 21, 58, 858, DateTimeKind.Unspecified).AddTicks(7925),
+                            CreatedAt = new DateTime(2024, 11, 10, 13, 41, 22, 912, DateTimeKind.Unspecified).AddTicks(1797),
                             Email = "admin@gmail.com",
                             Hash = "admin",
                             LastName = "Admin",
                             Login = "admin",
                             Name = "Admin",
-                            Password = "$2a$11$suc4Ti3dLipBAZlbJGamxO2JjvQRHiNgdH5tJDcfI7mYCICCL0XRG",
+                            Password = "$2a$11$VbhpyFR6tO8vDLkL..j9..xJIhdNY7qjF/Mqsn9k9NiEDlaIsh6ji",
                             RoleId = 1
                         });
                 });
@@ -1350,6 +1374,25 @@ namespace Luzyce.Api.Db.AppDb.Migrations
                     b.Navigation("ParentDocument");
 
                     b.Navigation("SubordinateDocument");
+                });
+
+            modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.KwitLack", b =>
+                {
+                    b.HasOne("Luzyce.Api.Db.AppDb.Models.Document", "Kwit")
+                        .WithMany()
+                        .HasForeignKey("KwitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Luzyce.Api.Db.AppDb.Models.Error", "Lack")
+                        .WithMany()
+                        .HasForeignKey("LackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Kwit");
+
+                    b.Navigation("Lack");
                 });
 
             modelBuilder.Entity("Luzyce.Api.Db.AppDb.Models.LampshadeNorm", b =>

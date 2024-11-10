@@ -4,7 +4,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shared", "shared", "{00855A
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D0F60F56-18C6-4169-B27C-766897BEA42F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luzyce.Core", "shared\src\Luzyce.Core\Luzyce.Core.csproj", "{67FDD009-6265-43F3-9ABF-3BB45EE56B96}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luzyce.Shared", "shared\src\Luzyce.Shared\Luzyce.Shared.csproj", "{67FDD009-6265-43F3-9ABF-3BB45EE56B96}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Luzyce.Api.Core", "shared\src\Luzyce.Api.Core\Luzyce.Api.Core.csproj", "{794E0710-A453-4B15-BD3E-AFB36A063F28}"
 EndProject

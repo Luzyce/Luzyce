@@ -10,6 +10,11 @@
     <Loader @ref="loader"/>
     return;
 }
+<style>
+    .table tbody tr:last-child {
+        border-top: 2px solid #000;
+    }
+</style>
 
 <h3>Edycja Kwitu: @kwit.Number</h3>
 <h5>Ilość na Planie Produkcji: @kwit.Quantity</h5>
@@ -20,12 +25,12 @@
         <input type="number" class="form-control" id="quantityNetto" @bind="kwit.QuantityNetto" readonly="@(isReadonly || isLocked)">
     </div>
     <div class="col form-group">
-        <label>Braki:</label>
-        <input type="number" class="form-control" id="quantityLoss" @bind="kwit.QuantityLoss" readonly="@(isReadonly || isLocked)">
-    </div>
-    <div class="col form-group">
         <label>Ilość Do Sprawdzenia:</label>
         <input type="number" class="form-control" id="quantityToImprove" @bind="kwit.QuantityToImprove" readonly="@(isReadonly || isLocked)">
+    </div>
+    <div class="col form-group">
+        <label>Braki:</label>
+        <input type="number" class="form-control" id="quantityLoss" @bind="newLossQuantity" readonly="readonly">
     </div>
 </div>
 
@@ -55,28 +60,48 @@
     }
 </div>
 
-@if (kwit.Lacks is not null or { Count: > 0 })
-{
-    <br>
-    <br>
-    <table class="table table-bordered" style="max-width: 400px;">
-        <thead>
+<br>
+<br>
+<table class="table table-bordered" style="max-width: 500px;">
+    <thead>
+    <tr>
+        <th>Braki</th>
+        <th>Ilość</th>
+        <th>Akcje</th>
+    </tr>
+    </thead>
+    <tbody>
+    @foreach (var lack in updatedLacks)
+    {
         <tr>
-            <th>Błąd</th>
-            <th>Ilość</th>
+            <td>@lack.ErrorName (@lack.ErrorCode)</td>
+            <td>
+                <input type="number" class="form-control" @bind="lack.Quantity" min="0">
+            </td>
+            <td>
+                <button class="btn btn-danger" @onclick="() => RemoveLack(lack)">Usuń</button>
+            </td>
         </tr>
-        </thead>
-        <tbody>
-        @foreach (var lack in kwit.Lacks)
-        {
-            <tr>
-                <td>@lack.ErrorName (@lack.ErrorCode)</td>
-                <td>@lack.Quantity</td>
-            </tr>
-        }
-        </tbody>
-    </table>
-}
+    }
+    <tr>
+        <td>
+            <select class="form-select" @bind="selectedErrorCode">
+                <option selected>Wybierz brak</option>
+                @foreach (var lack in kwit.Lacks.Where(lack => lack.Quantity == 0))
+                {
+                    <option value="@lack.ErrorCode">@lack.ErrorName (@lack.ErrorCode)</option>
+                }
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control" min="1" @bind="newLackQuantity">
+        </td>
+        <td>
+            <button class="btn btn-success" @onclick="AddLack">Dodaj</button>
+        </td>
+    </tr>
+    </tbody>
+</table>
 
 @if (request != null)
 {
@@ -97,6 +122,10 @@
     private bool isReadonly;
     private bool isLocked;
     private GetDocumentDependencyChartRequest? request;
+    private List<GetLacks> updatedLacks = [];
+    private string? selectedErrorCode;
+    private int newLackQuantity = 1;
+    private int newLossQuantity = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -107,6 +136,9 @@
         }
 
         kwit = await ProductionPlanService.GetKwit(KwitId);
+
+        updatedLacks = kwit is { Lacks: not null } ? kwit.Lacks.Where(lack => lack.Quantity != 0).ToList() : [];
+        newLossQuantity = kwit?.QuantityLoss ?? 0;
 
         if (kwit?.Status?.Name == "Zamknięty")
         {
@@ -148,16 +180,48 @@
         {
             Id = kwit.Id,
             QuantityNetto = kwit.QuantityNetto,
-            QuantityLoss = kwit.QuantityLoss,
             QuantityToImprove = kwit.QuantityToImprove,
+            QuantityLoss = newLossQuantity,
+            Lacks = updatedLacks
         });
         NavManager.NavigateTo($"/productionPlan/edit?dateString={DateString}&shift={Shift}&team={Team}");
     }
 
     private Task ShowDependencyChart(int kwitId)
     {
-        request = new GetDocumentDependencyChartRequest { DocumentId = kwitId, DocumentType = "Kwit" };
+        request = new GetDocumentDependencyChartRequest
+        {
+            DocumentId = kwitId,
+            DocumentType = "Kwit"
+        };
         return Task.CompletedTask;
     }
 
+    private void AddLack()
+    {
+        if (selectedErrorCode == null || newLackQuantity < 1) return;
+
+        var lack = kwit?.Lacks.FirstOrDefault(l => l.ErrorCode == selectedErrorCode);
+        
+        if (lack == null)
+        {
+            return;
+        }
+
+        lack.Quantity = newLackQuantity;
+        updatedLacks.Add(lack);
+        newLackQuantity = 1;
+        newLossQuantity = updatedLacks.Sum(l => l.Quantity) ?? 0;
+        
+        updatedLacks = updatedLacks.OrderBy(l => l.ErrorCode).ToList();
+        
+        StateHasChanged();
+    }
+
+    private void RemoveLack(GetLacks lack)
+    {
+        updatedLacks.Remove(lack);
+        newLossQuantity = updatedLacks.Sum(l => l.Quantity) ?? 0;
+        StateHasChanged();
+    }
 }

@@ -5,7 +5,7 @@
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.8" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Luzyce.Core\Luzyce.Core.csproj" />
+    <ProjectReference Include="..\Luzyce.Shared\Luzyce.Shared.csproj" />
     <ProjectReference Include="..\Luzyce.Api.Core\Luzyce.Api.Core.csproj" />
     <ProjectReference Include="..\Luzyce.Api.Domain\Luzyce.Api.Domain.csproj" />
     <ProjectReference Include="..\Luzyce.Api.Db.AppDb\Luzyce.Api.Db.AppDb.csproj" />

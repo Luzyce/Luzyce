@@ -117,17 +117,33 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
                 kwit.DocumentPositions.First().QuantityLoss - updateKwit.QuantityLoss,
                 kwit.DocumentPositions.First().QuantityToImprove - updateKwit.QuantityToImprove, updateKwit.Id);
         }
-
+        
         kwitRepository.AddOperation(new Operation
         {
             DocumentId = updateKwit.Id,
             OperatorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0"),
             QuantityNetDelta = updateKwit.QuantityNetto - kwit.DocumentPositions.First().QuantityNetto,
-            QuantityLossDelta = updateKwit.QuantityLoss - kwit.DocumentPositions.First().QuantityLoss,
             QuantityToImproveDelta = updateKwit.QuantityToImprove - kwit.DocumentPositions.First().QuantityToImprove,
+            QuantityLossDelta = 0,
             ClientId = int.Parse(User.FindFirstValue(ClaimTypes.PrimarySid) ?? "0"),
-            ErrorCodeId = 1
+            ErrorCodeId = null
         });
+
+        foreach (var lack in updateKwit.Lacks)
+        {
+            var error = kwitRepository.GetError(lack.ErrorCode);
+            
+            kwitRepository.AddOperation(new Operation
+            {
+                DocumentId = updateKwit.Id,
+                OperatorId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "0"),
+                QuantityNetDelta = 0,
+                QuantityToImproveDelta = 0,
+                QuantityLossDelta = lack.Quantity ?? 0 - kwit.Lacks.FirstOrDefault(x => x.LackId == error?.Id)?.Quantity ?? 0,
+                ClientId = int.Parse(User.FindFirstValue(ClaimTypes.PrimarySid) ?? "0"),
+                ErrorCodeId = error?.Id
+            });
+        }
 
         kwitRepository.UpdateKwit(updateKwit);
 
@@ -141,7 +157,7 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
     public IActionResult TerminalGetKwit([FromBody] GetDocumentByQrCodeDto dto)
     {
         var kwit = kwitRepository
-            .TerminalGetKwit(Int32.Parse(Regex.Match(dto.Number, "(kwit-(\\d+))").Groups[2].Value));
+            .TerminalGetKwit(int.Parse(Regex.Match(dto.Number, "(kwit-(\\d+))").Groups[2].Value));
 
         if (kwit == null || kwit.DocumentsDefinition is not { Code: "KW" })
         {
@@ -280,6 +296,8 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
 
             documentPosition.QuantityLoss =
                 dto.Type == '+' ? documentPosition.QuantityLoss + 1 : documentPosition.QuantityLoss - 1;
+
+            kwitRepository.UpdateLack(dto.Type, dto.ErrorCode ?? "00", id);
         }
         else
         {

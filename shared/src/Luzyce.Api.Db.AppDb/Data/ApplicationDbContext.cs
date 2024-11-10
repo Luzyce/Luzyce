@@ -31,6 +31,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> dbConte
     public DbSet<CustomerLampshade> CustomerLampshades { get; set; }
     public DbSet<Client> Clients { get; set; }
     public DbSet<Log> Logs { get; set; }
+    public DbSet<KwitLack> KwitLacks { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
