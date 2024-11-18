@@ -382,7 +382,7 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
             });
         }
 
-        kwitRepository.UnlockKwit(id);
+        kwitRepository.TerminalUnlockKwit(id);
 
         _eventRepository.AddLog(User, "Zamknięto Kwit", JsonSerializer.Serialize(id));
 

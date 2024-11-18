@@ -278,6 +278,31 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         }
         applicationDbContext.SaveChanges();
     }
+    
+    public void TerminalUnlockKwit(int id)
+    {
+        var kwit = applicationDbContext.Documents
+            .Include(document => document.ProductionPlanPositions!)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.ProductionPlan!)
+            .ThenInclude(productionPlan => productionPlan.Positions)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.Kwit).Include(document => document.ProductionPlanPositions).ThenInclude(productionPlanPositions => productionPlanPositions.ProductionPlan).ThenInclude(productionPlan => productionPlan.Positions).ThenInclude(productionPlanPositions => productionPlanPositions.DocumentPosition).ThenInclude(documentPositions => documentPositions.LampshadeNorm)
+            .FirstOrDefault(x => x.Id == id);
+        
+        if (kwit == null)
+        {
+            return;
+        }
+
+        kwit.ClosedAt = DateTime.Now.ConvertToEuropeWarsaw();
+        kwit.LockedBy = null;
+        kwit.StatusId = 3;
+        kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
+        if (kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Any(x => x.DocumentPosition?.LampshadeNorm?.QuantityPerChange == 0) == false)
+        {
+            kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Sum(x => x.Quantity / x.DocumentPosition?.LampshadeNorm?.QuantityPerChange * 8) == 8 ? 3 : 1;
+        }
+        applicationDbContext.SaveChanges();
+    }
 
     public bool IsKwitLocked(int id)
     {
