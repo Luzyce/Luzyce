@@ -116,7 +116,11 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         kwit.ClosedAt = null;
         kwit.StatusId = 1;
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
-        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Sum(x => x.Quantity / x.DocumentPosition?.LampshadeNorm?.QuantityPerChange * 8) == 8 ? 3 : 1;
+
+        if (kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Any(x => x.DocumentPosition?.LampshadeNorm?.QuantityPerChange == 0) == false)
+        {
+            kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Sum(x => x.Quantity / x.DocumentPosition?.LampshadeNorm?.QuantityPerChange * 8) == 8 ? 3 : 1;
+        }
         applicationDbContext.SaveChanges();
     }
 
@@ -266,9 +270,12 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
 
         kwit.ClosedAt = DateTime.Now.ConvertToEuropeWarsaw();
         kwit.LockedBy = null;
-        kwit.StatusId = 3;
+        kwit.StatusId = 1;
         kwit.UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw();
-        kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Sum(x => x.Quantity / x.DocumentPosition?.LampshadeNorm?.QuantityPerChange * 8) == 8 ? 3 : 1;
+        if (kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Any(x => x.DocumentPosition?.LampshadeNorm?.QuantityPerChange == 0) == false)
+        {
+            kwit.ProductionPlanPositions!.ProductionPlan!.StatusId = kwit.ProductionPlanPositions?.ProductionPlan?.Positions.Sum(x => x.Quantity / x.DocumentPosition?.LampshadeNorm?.QuantityPerChange * 8) == 8 ? 3 : 1;
+        }
         applicationDbContext.SaveChanges();
     }
 
@@ -432,7 +439,7 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         };
     }
     
-    public void UpdateLack(char type, string errorCode, int kwitId)
+    public void UpdateLack(char type, string errorCode, int kwitId, int quantity = 1)
     {
         var error = applicationDbContext.Errors
             .FirstOrDefault(x => x.Code == errorCode);
@@ -459,7 +466,7 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         switch (type)
         {
             case '+':
-                lack.Quantity++;
+                lack.Quantity += quantity;
                 break;
             case '-':
                 lack.Quantity--;

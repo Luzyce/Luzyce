@@ -260,7 +260,7 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
             }
 
             documentPosition.QuantityNetto =
-                dto.Type == '+' ? documentPosition.QuantityNetto + 1 : documentPosition.QuantityNetto - 1;
+                dto.Type == '+' ? documentPosition.QuantityNetto + dto.Quantity : documentPosition.QuantityNetto - 1;
         }
         else if (dto.Field == "DoPoprawy")
         {
@@ -273,7 +273,7 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
             }
 
             documentPosition.QuantityToImprove = dto.Type == '+'
-                ? documentPosition.QuantityToImprove + 1
+                ? documentPosition.QuantityToImprove + dto.Quantity
                 : documentPosition.QuantityToImprove - 1;
         }
         else if (dto.Field == "Zlych")
@@ -295,9 +295,9 @@ public class KwitController(KwitRepository kwitRepository, EventRepository event
             }
 
             documentPosition.QuantityLoss =
-                dto.Type == '+' ? documentPosition.QuantityLoss + 1 : documentPosition.QuantityLoss - 1;
+                dto.Type == '+' ? documentPosition.QuantityLoss + dto.Quantity : documentPosition.QuantityLoss - 1;
 
-            kwitRepository.UpdateLack(dto.Type, dto.ErrorCode ?? "00", id);
+            kwitRepository.UpdateLack(dto.Type, dto.ErrorCode ?? "00", id, dto.Quantity);
         }
         else
         {
