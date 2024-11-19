@@ -70,6 +70,7 @@ jobs:
             -e ASPNETCORE_HTTP_PORTS=35132 \
             -e ASPNETCORE_ENVIRONMENT=Development \
             --name luzyceapi \
+            --restart always \
             ghcr.io/luzyce/luzyce-api:latest
 
       - name: Check Luzyce.Api container logs
@@ -110,6 +111,7 @@ jobs:
             -e ASPNETCORE_HTTP_PORTS=35133 \
             -e ASPNETCORE_ENVIRONMENT=Development \
             --name luzycewebapp \
+            --restart always \
             ghcr.io/luzyce/luzyce-webapp:latest
 
       - name: Check Luzyce.WebApp container logs
