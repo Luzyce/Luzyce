@@ -236,7 +236,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
                 worksheet.Cell(row, "G").Value = $"{position.ProductionPlan?.HeadsOfMetallurgicalTeams?.Name} {position.ProductionPlan?.HeadsOfMetallurgicalTeams?.LastName}";
                 worksheet.Cell(row, "H").Value = GetTeamRomanNumeral(position.ProductionPlan?.Team);
                 
-                if (position.DocumentPosition?.LampshadeNorm?.QuantityPerChange != null && position.DocumentPosition?.LampshadeNorm?.QuantityPerChange != 0)
+                if (position.DocumentPosition?.LampshadeNorm?.QuantityPerChange > 0)
                 {
                     var totalHours = position.Quantity / (decimal)position.DocumentPosition?.LampshadeNorm?.QuantityPerChange! * 8;
 
@@ -269,7 +269,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         var fileContent = stream.ToArray();
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-            $"Plan Produkcji.xlsx");
+            "Plan Produkcji.xlsx");
 
         string GetTeamRomanNumeral(int? team) => team switch
         {
