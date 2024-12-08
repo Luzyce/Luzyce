@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using System.Text.Json;
+using ClosedXML.Excel;
 using Luzyce.Api.Repositories;
 using Luzyce.Shared.Models.ProductionPlan;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +17,8 @@ using iText.Layout.Properties;
 using iText.Svg.Converter;
 using iText.Svg.Processors;
 using iText.Svg.Processors.Impl;
+using Luzyce.Api.Domain.Models;
+using Document=QuestPDF.Fluent.Document;
 
 namespace Luzyce.Api.Controllers;
 
@@ -334,5 +337,90 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         return container
             .Border(1)
             .BorderColor(Colors.Black);
+    }
+
+    [HttpGet("ProdPlanExcel/{data}")]
+    public IActionResult ProdPlanExcel(DateOnly data)
+    {
+        var productionPlans = productionPlanRepository.GetProductionPlanPdf(data);
+        var shiftsSupervisors = productionPlanRepository.GetShiftsSupervisors(data);
+
+        var templatePath = Path.Combine("Resources", "prod-plan-template.xlsx");
+        
+        if (!System.IO.File.Exists(templatePath))
+        {
+            return NotFound("Template file not found.");
+        }
+        
+        using var workbook = new XLWorkbook(templatePath);
+        var worksheet = workbook.Worksheet(1);
+
+        for (var x = 0; x < shiftsSupervisors.Count; x++)
+        {
+            worksheet.Cell(x + 1, "E").Value = $"{shiftsSupervisors[x]?.Name} {shiftsSupervisors[x]?.LastName}";
+        }
+        
+        worksheet.Cell("R2").Value = data.ToString("dd.MM.yyyy");
+
+        for (var shiftNumber = 0; shiftNumber < 4; shiftNumber++)
+        {
+            var positions = productionPlans
+                .Where(p => p.Shift!.ShiftNumber == shiftNumber + 1)
+                .SelectMany(p => p.Positions)
+                .OrderBy(p => p.ProductionPlan?.Team)
+                .ToList();
+            
+            var shiftBaseRow = 5 + shiftNumber * 7;
+            
+            foreach (var position in positions)
+            {
+                var row = positions.IndexOf(position) + shiftBaseRow;
+                worksheet.Cell(row, "E").Value = position.DocumentPosition?.Lampshade?.Code;
+                worksheet.Cell(row, "F").Value = $"{position.DocumentPosition?.LampshadeNorm?.Variant?.Name} {position.DocumentPosition?.LampshadeDekor}";
+                worksheet.Cell(row, "G").Value = $"{position.ProductionPlan?.HeadsOfMetallurgicalTeams?.Name} {position.ProductionPlan?.HeadsOfMetallurgicalTeams?.LastName}";
+                worksheet.Cell(row, "H").Value = GetTeamRomanNumeral(position.ProductionPlan?.Team);
+                
+                if (position.DocumentPosition?.LampshadeNorm?.QuantityPerChange != null && position.DocumentPosition?.LampshadeNorm?.QuantityPerChange != 0)
+                {
+                    var totalHours = position.Quantity / (decimal)position.DocumentPosition?.LampshadeNorm?.QuantityPerChange! * 8;
+
+                    var hours = (int)totalHours;
+                    var minutes = (int)((totalHours - hours) * 60);
+
+                    worksheet.Cell(row, "I").Value = hours switch
+                    {
+                        > 0 when minutes > 0 => $"{hours}h {minutes}m",
+                        > 0 => $"{hours}h",
+                        _ => $"{minutes}m"
+                    };
+                }
+
+                worksheet.Cell(row, "J").Value = position.DocumentPosition?.LampshadeNorm?.WeightBrutto;
+                worksheet.Cell(row, "K").Value = position.DocumentPosition?.LampshadeNorm?.WeightNetto;
+                worksheet.Cell(row, "L").Value = position.DocumentPosition?.LampshadeNorm?.QuantityPerChange;
+                worksheet.Cell(row, "Q").Value = position.DocumentPosition?.OrderPositionForProduction?.Order?.Customer?.Name;
+            }
+            
+            worksheet.Cell(shiftBaseRow, "R").Value = worksheet.Cell(shiftBaseRow, "R").Value = string.Join("\n", positions
+                .Select(p => new { Team = GetTeamRomanNumeral(p.ProductionPlan?.Team), p.ProductionPlan?.Remarks })
+                .Where(r => !string.IsNullOrEmpty(r.Remarks))
+                .Distinct()
+                .Select(r => $"Zespół {r.Team}: {r.Remarks}"));
+        }
+        
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        var fileContent = stream.ToArray();
+        
+        return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+            $"Plan Produkcji.xlsx");
+
+        string GetTeamRomanNumeral(int? team) => team switch
+        {
+            1 => "I",
+            2 => "II",
+            3 => "III",
+            _ => ""
+        };
     }
 }

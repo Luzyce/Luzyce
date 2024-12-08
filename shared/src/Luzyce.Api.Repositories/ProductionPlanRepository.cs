@@ -365,16 +365,16 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
         productionPlan.Shift!.ShiftSupervisorId = request.ShiftSupervisorId;
         productionPlan.HeadsOfMetallurgicalTeamsId = request.HeadsOfMetallurgicalTeamsId;
         productionPlan.Remarks = request.Remarks;
-        
-        if (request.ProductionPlanPositions.All(x => x.QuantityPerChange != null) &&
-            request.ProductionPlanPositions.Sum(x => x.Quantity / (decimal)x.QuantityPerChange! * 8) == 8)
-        {
-            productionPlan.StatusId = productionPlan.Positions.All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
-        }
-        else
-        {
-            productionPlan.StatusId = 1;
-        }
+        //
+        // if (request.ProductionPlanPositions.All(x => x.QuantityPerChange != null) &&
+        //     request.ProductionPlanPositions.Sum(x => x.Quantity / (decimal)x.QuantityPerChange! * 8) == 8)
+        // {
+        //     productionPlan.StatusId = productionPlan.Positions.All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
+        // }
+        // else
+        // {
+        //     productionPlan.StatusId = 1;
+        // }
 
         
         var positionDictionary = productionPlan.Positions.ToDictionary(p => p.Id);

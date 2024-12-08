@@ -92,7 +92,7 @@
         Navigation.NavigateTo($"/productionPlan/edit?dateString={date.ToString("yyyy-MM-dd")}&shift={shift}&team={team}");
     }
 
-    private void PrintProductionPlan()
+    private async Task PrintProductionPlan()
     {
         if (ProductionDay == null)
         {
@@ -101,8 +101,8 @@
         
         var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, ProductionDay ?? 0).ToString("yyyy-MM-dd");
 
-        var url = Configuration["apiUrl"] + $"/api/productionPlan/productionPlan-{selectedDate}.pdf?timestamp=1";
-        PrintingService.Print(url);
+        var url = Configuration["apiUrl"] + $"/api/productionPlan/ProdPlanExcel/{selectedDate}?timestamp=1";
+        await JsRuntime.InvokeVoidAsync("open", url, "_blank");
     }
     
     private async Task PrintProductionRep()
@@ -114,7 +114,7 @@
         
         var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, ReportDay ?? 0).ToString("yyyy-MM-dd");
 
-        var url = Configuration["apiUrl"] + $"/api/productionRaport/downloadExcel/{selectedDate}/{ReportShift}";
+        var url = Configuration["apiUrl"] + $"/api/productionRaport/downloadExcel/{selectedDate}/{ReportShift}?timestamp=1";
         await JsRuntime.InvokeVoidAsync("open", url, "_blank");
     }
     
