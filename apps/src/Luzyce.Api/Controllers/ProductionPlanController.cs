@@ -201,7 +201,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         var productionPlans = productionPlanRepository.GetProductionPlanPdf(date);
         var shiftsSupervisors = productionPlanRepository.GetShiftsSupervisors(date);
 
-        var templatePath = Path.Combine("Resources", "prod-plan-template.xlsx");
+        var templatePath = Path.Combine("Resources/prod-plan-template.xlsx");
         
         if (!System.IO.File.Exists(templatePath))
         {
