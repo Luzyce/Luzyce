@@ -365,16 +365,6 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
         productionPlan.Shift!.ShiftSupervisorId = request.ShiftSupervisorId;
         productionPlan.HeadsOfMetallurgicalTeamsId = request.HeadsOfMetallurgicalTeamsId;
         productionPlan.Remarks = request.Remarks;
-        
-        if (request.ProductionPlanPositions.All(x => x.QuantityPerChange != null) &&
-            request.ProductionPlanPositions.Sum(x => x.Quantity / (decimal)x.QuantityPerChange! * 8) == 8)
-        {
-            productionPlan.StatusId = productionPlan.Positions.All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
-        }
-        else
-        {
-            productionPlan.StatusId = 1;
-        }
 
         
         var positionDictionary = productionPlan.Positions.ToDictionary(p => p.Id);
@@ -478,68 +468,59 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
         
         return shiftSupervisors;
     }
-    
-    private static Luzyce.Api.Domain.Models.Warehouse WarehouseDomainFromDb(Warehouse warehouse)
+
+    public GetProductionPlans RefreshProductionPlan(DateOnly date)
     {
-        ArgumentNullException.ThrowIfNull(warehouse);
-
-        return new Luzyce.Api.Domain.Models.Warehouse
+        var productionPlans = applicationDbContext.ProductionPlans
+            .Where(x => x.Date.Month == date.Month && x.Date.Year == date.Year)
+            .Include(productionPlan => productionPlan.Positions)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.Kwit)
+            .Include(productionPlan => productionPlan.Positions)
+            .ThenInclude(productionPlanPositions => productionPlanPositions.DocumentPosition)
+            .ThenInclude(documentPositions => documentPositions!.LampshadeNorm)
+            .ToList();
+        
+        foreach (var productionPlan in productionPlans.Where(x => x.Positions.Count > 0).ToList())
         {
-            Id = warehouse.Id,
-            Code = warehouse.Code,
-            Name = warehouse.Name
-        };
-    }
-
-    private static Luzyce.Api.Domain.Models.User UserDomainFromDb(User user)
-    {
-        ArgumentNullException.ThrowIfNull(user);
-
-        return new Luzyce.Api.Domain.Models.User
+            if (productionPlan.Positions.All(x => x.DocumentPosition?.LampshadeNorm?.QuantityPerChange != null) &&
+                productionPlan.Positions.Sum(x => x.Quantity / (decimal)x.DocumentPosition?.LampshadeNorm?.QuantityPerChange! * 8) == 8)
+            {
+                productionPlan.StatusId = productionPlan.Positions.All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
+            }
+            else
+            {
+                productionPlan.StatusId = 1;
+            }
+        }
+        
+        return new GetProductionPlans
         {
-            Id = user.Id,
-            Name = user.Name,
-            LastName = user.LastName,
-            Email = user.Email,
-            Login = user.Login,
-            Password = user.Password,
-            Hash = user.Hash,
-            CreatedAt = user.CreatedAt,
-            RoleId = user.RoleId
-        };
-    }
-    public static Luzyce.Api.Domain.Models.Role RoleDomainFromDb(Luzyce.Api.Db.AppDb.Models.Role role)
-    {
-        ArgumentNullException.ThrowIfNull(role);
-
-        return new Luzyce.Api.Domain.Models.Role
-        {
-            Id = role.Id,
-            Name = role.Name
-        };
-    }
-
-    private static Luzyce.Api.Domain.Models.Status StatusDomainFromDb(Status status)
-    {
-        ArgumentNullException.ThrowIfNull(status);
-
-        return new Luzyce.Api.Domain.Models.Status
-        {
-            Id = status.Id,
-            Name = status.Name,
-            Priority = status.Priority
-        };
-    }
-
-    private static Luzyce.Api.Domain.Models.DocumentsDefinition DocumentsDefinitionDomainFromDb(DocumentsDefinition documentsDefinition)
-    {
-        ArgumentNullException.ThrowIfNull(documentsDefinition);
-
-        return new Luzyce.Api.Domain.Models.DocumentsDefinition
-        {
-            Id = documentsDefinition.Id,
-            Code = documentsDefinition.Code,
-            Name = documentsDefinition.Name
+            ProductionPlans = applicationDbContext.ProductionPlans
+                .Where(x => x.Date.Month == date.Month && x.Date.Year == date.Year)
+                .Select(x => new GetProductionPlanForCalendar
+                {
+                    Id = x.Id,
+                    Date = x.Date,
+                    Shift = (x.Shift == null ? null : new GetShift
+                    {
+                        Id = x.Shift.Id,
+                        Date = x.Shift.Date,
+                        ShiftNumber = x.Shift.ShiftNumber,
+                        ShiftSupervisor = x.Shift.ShiftSupervisor == null ? null : new GetUserResponseDto
+                        {
+                            Id = x.Shift.ShiftSupervisor.Id,
+                            Name = x.Shift.ShiftSupervisor.Name,
+                            LastName = x.Shift.ShiftSupervisor.LastName
+                        }
+                    })!,
+                    Team = x.Team,
+                    Status = x.Status == null ? null : new GetStatusResponseDto
+                    {
+                        Id = x.Status.Id,
+                        Name = x.Status.Name
+                    }
+                })
+                .ToList()
         };
     }
 }

@@ -25,6 +25,23 @@ public class ProductionPlanService(HttpClient httpClient, TokenValidationService
         return null;
     }
     
+    public async Task<GetProductionPlans?> RefreshProductionPlansAsync(string date)
+    {
+        if (!await tokenValidationService.IsTokenValid())
+        {
+            return null;
+        }   
+
+        var response = await httpClient.GetAsync($"/api/productionPlan/refreshProductionPlan/{date}");
+        
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<GetProductionPlans>();
+        }
+
+        return null;
+    }
+    
     public async Task<GetProductionPlan?> GetPositionsAsync(GetProductionPlanPositionsRequest getProductionPlanPositionsRequest)
     {
         if (!await tokenValidationService.IsTokenValid())
