@@ -6,9 +6,6 @@ using Luzyce.Shared.Models.ProductionPlan;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QRCoder;
-using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
-using QuestPDF.Fluent;
 using iTextLayout = iText.Layout;
 using iTextVerticalAlignment=iText.Layout.Properties.VerticalAlignment;
 using iText.Kernel.Pdf;
@@ -17,8 +14,6 @@ using iText.Layout.Properties;
 using iText.Svg.Converter;
 using iText.Svg.Processors;
 using iText.Svg.Processors.Impl;
-using Luzyce.Api.Domain.Models;
-using Document=QuestPDF.Fluent.Document;
 
 namespace Luzyce.Api.Controllers;
 
@@ -96,6 +91,18 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         eventRepository.AddLog(User, "Zaktualizowano pozycje w planie produkcji", JsonSerializer.Serialize(request));
 
         return Ok();
+    }
+    
+    [HttpGet("refreshProductionPlan/{strDate}")]
+    [Authorize]
+    public IActionResult RefreshProductionPlan(string strDate)
+    {
+        var prodPlans = productionPlanRepository.RefreshProductionPlan(DateOnly.ParseExact(strDate, "yyyy-MM-dd"));
+        eventRepository.AddLog(User, "Odświeżono plan produkcji", JsonSerializer.Serialize(new
+        {
+            date = strDate
+        }));
+        return Ok(prodPlans);
     }
     
     [HttpGet("kwit-{id:int}.pdf")]
@@ -185,158 +192,6 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         
         doc.Close();
         return Results.File(stream.ToArray(), "application/pdf");
-    }
-
-
-    [HttpGet("productionPlan-{data}.pdf")]
-    public IResult GetProductionPlanPdf(DateOnly data)
-    {
-        var productionPlans = productionPlanRepository.GetProductionPlanPdf(data);
-        var shiftsSupervisors = productionPlanRepository.GetShiftsSupervisors(data);
-    
-        var document = Document.Create(container =>
-        {
-            container.Page(page =>
-            {
-                page.Size(PageSizes.A4);
-                page.Margin(1, Unit.Centimetre);
-                page.PageColor(Colors.White);
-                page.DefaultTextStyle(x => x.FontSize(20));
-    
-                page.Header()
-                    .Text($"Plan produkcji na {data.ToString("dd.MM.yyyy")}")
-                    .SemiBold().FontSize(36);
-    
-                page.Content()
-                    .PaddingVertical(1, Unit.Centimetre)
-                    .Column(column =>
-                    {
-                        column.Item().Table(table =>
-                        {
-                            table.ColumnsDefinition(columns =>
-                            {
-                                columns.RelativeColumn(0.2f);
-    
-                                if (productionPlans.Any(p => p.Shift!.ShiftNumber == 1))
-                                {
-                                    columns.RelativeColumn();
-                                }
-    
-                                if (productionPlans.Any(p => p.Shift!.ShiftNumber == 2))
-                                {
-                                    columns.RelativeColumn();
-                                }
-    
-                                if (productionPlans.Any(p => p.Shift!.ShiftNumber == 3))
-                                {
-                                    columns.RelativeColumn();
-                                }
-                            });
-    
-                            table.Header(header =>
-                            {
-                                header.Cell().Element(CellStyle).Padding(5).Text("").FontSize(16);
-                                if (productionPlans.Any(p => p.Shift!.ShiftNumber == 1))
-                                {
-                                    header.Cell().Element(CellStyle).Padding(5)
-                                        .Text($"Zmiana 1\nHutmistrz:\n{shiftsSupervisors[0]?.Name} {shiftsSupervisors[0]?.LastName}").FontSize(16);
-                                }
-    
-                                if (productionPlans.Any(p => p.Shift!.ShiftNumber == 2))
-                                {
-                                    header.Cell().Element(CellStyle).Padding(5)
-                                        .Text($"Zmiana 2\nHutmistrz:\n{shiftsSupervisors[1]?.Name} {shiftsSupervisors[1]?.LastName}").FontSize(16);
-                                }
-    
-                                if (productionPlans.Any(p => p.Shift!.ShiftNumber == 3))
-                                {
-                                    header.Cell().Element(CellStyle).Padding(5)
-                                        .Text($"Zmiana 3\nHutmistrz:\n{shiftsSupervisors[2]?.Name} {shiftsSupervisors[2]?.LastName}").FontSize(16);
-                                }
-                            });
-    
-                            for (var x = 1; x <= 3; x++)
-                            {
-                                table.Cell().Element(CellStyle).Padding(5).AlignCenter().RotateLeft().Width(90).Text("Zespół " + x).AlignCenter().FontSize(16);
-    
-                                for (var y = 1; y <= 3; y++)
-                                {
-                                    if (productionPlans.All(p => p.Shift!.ShiftNumber != y))
-                                    {
-                                        continue;
-                                    }
-    
-                                    var plan = productionPlans
-                                        .Find(p => p.Team == x && p.Shift!.ShiftNumber == y);
-    
-                                    if (plan != null)
-                                    {
-                                        var cellText = $"Hutnik: {plan.HeadsOfMetallurgicalTeams?.Name} {plan.HeadsOfMetallurgicalTeams?.LastName}\n";
-                                        cellText += $"Uwagi: {plan.Remarks}\n";
-    
-                                        for (var i = 0; i < plan.Positions.Count; i++)
-                                        {
-                                            if (i != 0)
-                                            {
-                                                cellText += "\n";
-                                            }
-    
-                                            var position = plan.Positions[i];
-                                            cellText += $"{i + 1}. " +
-                                                        $"{position.Kwit.First().DocumentPositions.First().Lampshade!.Code} " +
-                                                        $"{position.Kwit.First().DocumentPositions.First().LampshadeNorm!.Variant!.Name} " +
-                                                        $"{position.Kwit.First().DocumentPositions.First().LampshadeDekor}\n" +
-                                                        $"Ilość: {position.Quantity}\n" +
-                                                        $"Waga Netto: {position.Kwit.First().DocumentPositions.First().LampshadeNorm?.WeightNetto}\n" +
-                                                        $"Waga Brutto: {position.Kwit.First().DocumentPositions.First().LampshadeNorm?.WeightBrutto}\n" +
-                                                        $"Norma: {position.Kwit.First().DocumentPositions.First().LampshadeNorm?.QuantityPerChange}\n" +
-                                                        $"Kwit: {position.Kwit.First().Number}\n" +
-                                                        $"Firma: {position.Kwit.First().DocumentPositions.First().OrderPositionForProduction?.Order?.Customer?.Name}\n";
-                                        }
-    
-                                        table.Cell().Element(CellStyle).Padding(5).Text(cellText).FontSize(11);
-                                    }
-                                    else
-                                    {
-                                        table.Cell().Element(CellStyle).Text("-").AlignCenter();
-                                    }
-                                }
-                            }
-                            table.Cell().Element(CellStyle);
-    
-                            for (var y = 1; y <= 3; y++)
-                            {
-                                if (productionPlans.All(p => p.Shift!.ShiftNumber != y))
-                                {
-                                    continue;
-                                }
-    
-                                var sum = productionPlans
-                                    .Where(p => p.Shift!.ShiftNumber == y)
-                                    .Sum(p => p.Positions.Sum(x => x.Quantity * x.DocumentPosition?.LampshadeNorm?.WeightBrutto));
-    
-                                table.Cell().Element(CellStyle).Padding(5)
-                                    .Text($"Sumaryczna masa: {sum} kg").FontSize(11);
-                            }
-                        });
-                    });
-            });
-        });
-    
-        var pdf = document.GeneratePdf();
-    
-        Response.Headers.CacheControl = "no-store, no-cache, must-revalidate, proxy-revalidate";
-        Response.Headers.Pragma = "no-cache";
-        Response.Headers.Expires = "0";
-        
-        return Results.File(pdf, "application/pdf");
-    }
-
-    static IContainer CellStyle(IContainer container)
-    {
-        return container
-            .Border(1)
-            .BorderColor(Colors.Black);
     }
 
     [HttpGet("ProdPlanExcel/{data}")]

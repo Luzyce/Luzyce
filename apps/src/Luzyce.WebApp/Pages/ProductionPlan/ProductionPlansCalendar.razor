@@ -78,6 +78,18 @@
     .production-plans-container .status-inprogress {
         background-color: red;
     }
+
+    .last-updated {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 12px;
+        z-index: 1000;
+    }
 </style>
 
 
@@ -153,11 +165,17 @@
     </table>
 </div>
 
+<div class="last-updated">
+    Ostatnia aktualizacja: @LastUpdated.ToString("HH:mm:ss dd.MM.yyyy")
+</div>
+
 @code {
     private List<DateTime>? DaysOfMonth { get; set; }
     public DateTime CurrentDate { get; set; } = DateTime.Now;
     public List<GetProductionPlanForCalendar>? productionPlans;
     private DateOnly CurrentDay => DateOnly.FromDateTime(DateTime.Now);
+    private CancellationTokenSource? _refreshCancellationTokenSource;
+    private DateTime LastUpdated { get; set; } = DateTime.Now;
 
     [Parameter] public EventCallback<(DateOnly date, int change, int team)> OnItemClick { get; set; }
     [Parameter] public EventCallback OnMonthChanged { get; set; }
@@ -165,22 +183,37 @@
     protected override async Task OnInitializedAsync()
     {
         UpdateDaysOfMonth();
-        await LoadProductionPlans();
+        await RefreshProductionPlans();
+        
+        _refreshCancellationTokenSource = new CancellationTokenSource();
+        _ = RefreshDataPeriodically(_refreshCancellationTokenSource.Token);
     }
 
     private void UpdateDaysOfMonth()
     {
         DaysOfMonth = GetDaysOfMonth(CurrentDate.Year, CurrentDate.Month);
     }
+    
+    private async Task RefreshDataPeriodically(CancellationToken cancellationToken)
+    {
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                await RefreshProductionPlans();
+                StateHasChanged();
+                await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
 
-    private async Task LoadProductionPlans()
+    private async Task RefreshProductionPlans()
     {
         var oldProductionPlans = await ProductionPlanService
-            .GetProductionPlansAsync(
-                new GetMonthProductionPlanRequest()
-                {
-                    ProductionPlanDate = new DateOnly(CurrentDate.Year, CurrentDate.Month, 1)
-                });
+            .RefreshProductionPlansAsync(new DateOnly(CurrentDate.Year, CurrentDate.Month, 1).ToString("yyyy-MM-dd"));
 
         if (oldProductionPlans == null)
         {
@@ -188,6 +221,7 @@
         }
 
         productionPlans = oldProductionPlans.ProductionPlans;
+        LastUpdated = DateTime.Now;
     }
 
     private static List<DateTime> GetDaysOfMonth(int year, int month)
@@ -208,7 +242,7 @@
         CurrentDate = CurrentDate.AddMonths(-1);
         UpdateDaysOfMonth();
         await OnMonthChanged.InvokeAsync();
-        await LoadProductionPlans();
+        await RefreshProductionPlans();
     }
 
     private async Task NextMonth()
@@ -216,7 +250,7 @@
         CurrentDate = CurrentDate.AddMonths(1);
         UpdateDaysOfMonth();
         await OnMonthChanged.InvokeAsync();
-        await LoadProductionPlans();
+        await RefreshProductionPlans();
     }
 
     private async Task OnGridItemClick(DateTime date, int change, int team)
