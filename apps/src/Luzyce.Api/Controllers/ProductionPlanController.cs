@@ -194,11 +194,12 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         return Results.File(stream.ToArray(), "application/pdf");
     }
 
-    [HttpGet("ProdPlanExcel/{data}")]
-    public IActionResult ProdPlanExcel(DateOnly data)
+    [HttpGet("ProdPlanExcel/{strData}")]
+    public IActionResult ProdPlanExcel(string strData)
     {
-        var productionPlans = productionPlanRepository.GetProductionPlanPdf(data);
-        var shiftsSupervisors = productionPlanRepository.GetShiftsSupervisors(data);
+        var date = DateOnly.ParseExact(strData, "yyyy-MM-dd");
+        var productionPlans = productionPlanRepository.GetProductionPlanPdf(date);
+        var shiftsSupervisors = productionPlanRepository.GetShiftsSupervisors(date);
 
         var templatePath = Path.Combine("Resources", "prod-plan-template.xlsx");
         
@@ -215,7 +216,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
             worksheet.Cell(x + 1, "E").Value = $"{shiftsSupervisors[x]?.Name} {shiftsSupervisors[x]?.LastName}";
         }
         
-        worksheet.Cell("R2").Value = data.ToString("dd.MM.yyyy");
+        worksheet.Cell("R2").Value = date.ToString("dd.MM.yyyy");
 
         for (var shiftNumber = 0; shiftNumber < 4; shiftNumber++)
         {
