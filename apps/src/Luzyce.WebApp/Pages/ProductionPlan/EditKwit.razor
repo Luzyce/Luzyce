@@ -7,9 +7,10 @@
 
 @if (kwit == null)
 {
-    <Loader @ref="loader"/>
+    <Loader />
     return;
 }
+
 <style>
     .table tbody tr:last-child {
         border-top: 2px solid #000;
@@ -118,7 +119,6 @@
     [Parameter] [SupplyParameterFromQuery] public int KwitId { get; set; }
 
     GetKwit? kwit;
-    private Loader? loader;
     private bool isReadonly;
     private bool isLocked;
     private GetDocumentDependencyChartRequest? request;

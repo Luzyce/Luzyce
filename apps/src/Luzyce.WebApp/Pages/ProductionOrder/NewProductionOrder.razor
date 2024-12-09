@@ -8,11 +8,11 @@
 @inject OrderService OrderService
 @inject ProductionOrderService ProductionOrderService
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JS
+@inject IJSRuntime Js
 
 @if (orders == null)
 {
-    <Loader @ref="loader"/>
+    <Loader />
     return;
 }
 
@@ -201,7 +201,7 @@
     private DateTime? startDate;
     private DateTime? endDate;
     private int status = 1;
-    private readonly Dictionary<int, int> ProductionOrderPositions = new Dictionary<int, int>();
+    private readonly Dictionary<int, int> productionOrderPositions = new Dictionary<int, int>();
     private bool isAnyProductionOrderPositions;
     private CreateProductionOrderRequest? productionOrderDto;
     private GetVariantsResponseDto? variants;
@@ -211,8 +211,7 @@
     private readonly Dictionary<int, int> norms = new();
     private List<ProductWarehouseStocks> productWarehousesStocks = [];
     private QuantitiesInStock? quantitiesInStockComponent;
-    private Loader? loader;
-    private bool selectedOrderLoaded = false;
+    private bool selectedOrderLoaded;
 
     private CancellationTokenSource cts = new CancellationTokenSource();
 
@@ -360,26 +359,26 @@
         {
             if (newQuantity != 0)
             {
-                ProductionOrderPositions[positionId] = newQuantity;
+                productionOrderPositions[positionId] = newQuantity;
             }
             else
             {
-                ProductionOrderPositions.Remove(positionId);
+                productionOrderPositions.Remove(positionId);
             }
         }
 
-        isAnyProductionOrderPositions = ProductionOrderPositions.Values.Any(quantity => quantity != 0);
+        isAnyProductionOrderPositions = productionOrderPositions.Values.Any(quantity => quantity != 0);
 
         StateHasChanged();
     }
 
     private async Task OnReset()
     {
-        ProductionOrderPositions.Clear();
+        productionOrderPositions.Clear();
         
         foreach (var position in selectedOrder?.Positions ?? Enumerable.Empty<GetOrderPositionResponseDto>())
         {
-            await JS.InvokeVoidAsync("setInputValue", position.Id, "");
+            await Js.InvokeVoidAsync("setInputValue", position.Id, "");
         }
 
         isAnyProductionOrderPositions = false;
@@ -392,7 +391,7 @@
         {
             Order = selectedOrder!,
             ProductionOrderPositions = selectedOrder!.Positions
-                .Where(position => ProductionOrderPositions.ContainsKey(position.Id))
+                .Where(position => productionOrderPositions.ContainsKey(position.Id))
                 .Select(position => new CreateProductionOrder
                 {
                     DocumentPositionId = position.Id,
@@ -400,7 +399,7 @@
                     VariantId = variantIds[position.Id],
                     Dekor = dekors[position.Id],
                     Gross = (int)position.Quantity,
-                    Net = ProductionOrderPositions[position.Id],
+                    Net = productionOrderPositions[position.Id],
                     SubiektProductId = position.ProductId
                 })
                 .ToList()
@@ -511,7 +510,7 @@
         }
         
         OnQuantityInput(position.Id, new ChangeEventArgs { Value = productionOrderQuantity.ToString() });
-        await JS.InvokeVoidAsync(
+        await Js.InvokeVoidAsync(
             "setInputValue", 
             position.Id, 
             productionOrderQuantity == 0 ? "" : productionOrderQuantity.ToString());
