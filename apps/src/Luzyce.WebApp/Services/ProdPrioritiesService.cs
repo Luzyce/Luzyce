@@ -14,7 +14,7 @@ public class ProdPrioritiesService(HttpClient httpClient, TokenValidationService
         {
             return null;
         }
-        return await httpClient.GetFromJsonAsync<GetOrdersPositionsResponse>($"/api/productionOrder/positions");
+        return await httpClient.GetFromJsonAsync<GetOrdersPositionsResponse>("/api/productionOrder/positions");
         
     }
     

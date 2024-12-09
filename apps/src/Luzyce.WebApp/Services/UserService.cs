@@ -12,7 +12,7 @@ public class UserService(HttpClient httpClient, TokenValidationService tokenVali
         {
             return null;
         }
-        return await httpClient.GetFromJsonAsync<List<GetUserResponseDto>>($"/api/user") ??
+        return await httpClient.GetFromJsonAsync<List<GetUserResponseDto>>("/api/user") ??
                [];
     }
 
