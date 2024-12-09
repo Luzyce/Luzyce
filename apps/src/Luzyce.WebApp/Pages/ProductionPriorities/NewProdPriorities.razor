@@ -93,7 +93,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="() => productionPlansCalendar.StopRefreshing()"></button>
             </div>
             <div class="modal-body">
-                <ProductionPlansCalendar @ref="productionPlansCalendar" OnItemClick="HandleItemClick"/>
+                <ProductionPlansCalendar AutoStartRefreshing="false" @ref="productionPlansCalendar" OnItemClick="HandleItemClick"/>
             </div>
         </div>
     </div>

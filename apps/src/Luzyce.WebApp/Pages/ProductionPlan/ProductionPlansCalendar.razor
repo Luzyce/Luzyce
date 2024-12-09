@@ -177,7 +177,8 @@
     private CancellationTokenSource? refreshCancellationTokenSource;
     private bool isRefreshing = false;
     private DateTime LastUpdated { get; set; } = DateTime.Now;
-
+    
+    [Parameter] public bool AutoStartRefreshing { get; set; } = true;
     [Parameter] public EventCallback<(DateOnly date, int change, int team)> OnItemClick { get; set; }
     [Parameter] public EventCallback OnMonthChanged { get; set; }
 
@@ -185,6 +186,11 @@
     {
         UpdateDaysOfMonth();
         await RefreshProductionPlans();
+        
+        if (AutoStartRefreshing)
+        {
+            StartRefreshing();
+        }
     }
     
     public void Dispose()
