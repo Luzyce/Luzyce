@@ -175,7 +175,7 @@
     public List<GetProductionPlanForCalendar>? productionPlans;
     private DateOnly CurrentDay => DateOnly.FromDateTime(DateTime.Now);
     private CancellationTokenSource? refreshCancellationTokenSource;
-    private bool isRefreshing = true;
+    private bool isRefreshing = false;
     private DateTime LastUpdated { get; set; } = DateTime.Now;
 
     [Parameter] public EventCallback<(DateOnly date, int change, int team)> OnItemClick { get; set; }
@@ -185,10 +185,6 @@
     {
         UpdateDaysOfMonth();
         await RefreshProductionPlans();
-        
-        refreshCancellationTokenSource = new CancellationTokenSource();
-        _ = RefreshDataPeriodically(refreshCancellationTokenSource.Token); 
-        isRefreshing = true;
     }
     
     public void Dispose()
@@ -277,9 +273,9 @@
             return;
         }
 
+        isRefreshing = true;
         refreshCancellationTokenSource = new CancellationTokenSource();
         _ = RefreshDataPeriodically(refreshCancellationTokenSource.Token); 
-        isRefreshing = true;
     }
     
     public void StopRefreshing()
@@ -289,7 +285,7 @@
             return;
         }
 
-        refreshCancellationTokenSource?.Cancel();
         isRefreshing = false;
+        refreshCancellationTokenSource?.Cancel();
     }
 }
