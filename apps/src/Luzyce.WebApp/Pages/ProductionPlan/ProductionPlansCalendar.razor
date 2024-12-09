@@ -4,6 +4,8 @@
 @using Luzyce.WebApp.Services
 @inject ProductionPlanService ProductionPlanService
 
+@implements IDisposable
+
 @if (DaysOfMonth == null || productionPlans == null)
 {
     <Loader />
@@ -173,8 +175,10 @@
     public List<GetProductionPlanForCalendar>? productionPlans;
     private DateOnly CurrentDay => DateOnly.FromDateTime(DateTime.Now);
     private CancellationTokenSource? refreshCancellationTokenSource;
+    private bool isRefreshing = false;
     private DateTime LastUpdated { get; set; } = DateTime.Now;
-
+    
+    [Parameter] public bool AutoStartRefreshing { get; set; } = true;
     [Parameter] public EventCallback<(DateOnly date, int change, int team)> OnItemClick { get; set; }
     [Parameter] public EventCallback OnMonthChanged { get; set; }
 
@@ -183,8 +187,15 @@
         UpdateDaysOfMonth();
         await RefreshProductionPlans();
         
-        refreshCancellationTokenSource = new CancellationTokenSource();
-        _ = RefreshDataPeriodically(refreshCancellationTokenSource.Token);
+        if (AutoStartRefreshing)
+        {
+            StartRefreshing();
+        }
+    }
+    
+    public void Dispose()
+    {
+        refreshCancellationTokenSource?.Cancel();
     }
 
     private void UpdateDaysOfMonth()
@@ -198,6 +209,11 @@
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                if (!isRefreshing)
+                {
+                    break;
+                }
+                
                 await RefreshProductionPlans();
                 StateHasChanged();
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
@@ -254,5 +270,28 @@
     private async Task OnGridItemClick(DateTime date, int change, int team)
     {
         await OnItemClick.InvokeAsync((DateOnly.FromDateTime(date), change, team));
+    }
+    
+    public void StartRefreshing()
+    {
+        if (isRefreshing)
+        {
+            return;
+        }
+
+        isRefreshing = true;
+        refreshCancellationTokenSource = new CancellationTokenSource();
+        _ = RefreshDataPeriodically(refreshCancellationTokenSource.Token); 
+    }
+    
+    public void StopRefreshing()
+    {
+        if (!isRefreshing)
+        {
+            return;
+        }
+
+        isRefreshing = false;
+        refreshCancellationTokenSource?.Cancel();
     }
 }
