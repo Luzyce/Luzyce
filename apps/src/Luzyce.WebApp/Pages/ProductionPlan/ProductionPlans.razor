@@ -1,7 +1,7 @@
 ﻿@page "/productionPlan"
 @inject NavigationManager Navigation
 @inject IConfiguration Configuration
-@inject IJSRuntime JsRuntime
+@inject IJSRuntime Js
 
 <style>
     .legend {
@@ -105,7 +105,7 @@
         var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, ProductionDay ?? 0).ToString("yyyy-MM-dd");
 
         var url = Configuration["apiUrl"] + $"/api/productionPlan/ProdPlanExcel/{selectedDate}?timestamp=1";
-        await JsRuntime.InvokeVoidAsync("open", url, "_blank");
+        await Js.InvokeVoidAsync("open", url, "_blank");
     }
     
     private async Task PrintProductionRep()
@@ -118,7 +118,7 @@
         var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, ReportDay ?? 0).ToString("yyyy-MM-dd");
 
         var url = Configuration["apiUrl"] + $"/api/productionRaport/downloadExcel/{selectedDate}/{ReportShift}?timestamp=1";
-        await JsRuntime.InvokeVoidAsync("open", url, "_blank");
+        await Js.InvokeVoidAsync("open", url, "_blank");
     }
     
     private void OnProdPlanDayChanged(object? objValue)
