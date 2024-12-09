@@ -14,6 +14,7 @@ using iText.Layout.Properties;
 using iText.Svg.Converter;
 using iText.Svg.Processors;
 using iText.Svg.Processors.Impl;
+using Luzyce.Shared.Tools;
 
 namespace Luzyce.Api.Controllers;
 
@@ -170,24 +171,26 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.Date.ToString("dd.MM.yyyy")).SetFontSize(10),
             523, 610, 1, TextAlignment.LEFT, iTextVerticalAlignment.MIDDLE, 0);
         
-        doc.ShowTextAligned(new Paragraph(kwit.DocumentPositions[0].OrderPositionForProduction?.Order?.Customer?.Name).SetFontSize(8),
+        doc.ShowTextAligned(new Paragraph(PolishRefactor.RemovePolishChars(kwit.DocumentPositions[0].OrderPositionForProduction?.Order?.Customer?.Name)).SetFontSize(8),
             358, 591, 1, TextAlignment.LEFT, iTextVerticalAlignment.MIDDLE, 0);
         
-        doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftSupervisor?.Name + " " +
-                                          kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftSupervisor?.LastName).SetFontSize(8),
+        doc.ShowTextAligned(new Paragraph(PolishRefactor.RemovePolishChars(
+                $"{kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftSupervisor?.Name} " +
+                $"{kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftSupervisor?.LastName}")).SetFontSize(8),
             500, 591, 1, TextAlignment.LEFT, iTextVerticalAlignment.MIDDLE, 0);
         
         doc.ShowTextAligned(new Paragraph(kwit.DocumentPositions[0].Lampshade?.Code).SetFontSize(10),
             140, 553, 1, TextAlignment.CENTER, iTextVerticalAlignment.MIDDLE, 0);
         
-        doc.ShowTextAligned(new Paragraph(kwit.DocumentPositions[0].LampshadeNorm?.Variant?.Name).SetFontSize(10),
+        doc.ShowTextAligned(new Paragraph(PolishRefactor.RemovePolishChars(kwit.DocumentPositions[0].LampshadeNorm?.Variant?.Name)).SetFontSize(10),
             195, 553, 1, TextAlignment.CENTER, iTextVerticalAlignment.MIDDLE, 0);
         
         doc.ShowTextAligned(new Paragraph(kwit.DocumentPositions[0].LampshadeNorm?.QuantityPerChange.ToString()).SetFontSize(16),
             253, 553, 1, TextAlignment.CENTER, iTextVerticalAlignment.MIDDLE, 0);
         
-        doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.HeadsOfMetallurgicalTeams?.Name + " " +
-                                          kwit.ProductionPlanPositions?.ProductionPlan?.HeadsOfMetallurgicalTeams?.LastName).SetFontSize(12),
+        doc.ShowTextAligned(new Paragraph(PolishRefactor.RemovePolishChars(
+                $"{kwit.ProductionPlanPositions?.ProductionPlan?.HeadsOfMetallurgicalTeams?.Name} " +
+                $"{kwit.ProductionPlanPositions?.ProductionPlan?.HeadsOfMetallurgicalTeams?.LastName}")).SetFontSize(12),
             65, 516, 1, TextAlignment.LEFT, iTextVerticalAlignment.MIDDLE, 0);
         
         doc.Close();
