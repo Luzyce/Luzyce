@@ -12,7 +12,7 @@ public class DocumentDependencyChartService(HttpClient httpClient, TokenValidati
             return null;
         }
 
-        var response = await httpClient.PostAsJsonAsync($"/api/documentDependencyChart", getDocumentDependencyChartRequest);
+        var response = await httpClient.PostAsJsonAsync("/api/documentDependencyChart", getDocumentDependencyChartRequest);
         return await response.Content.ReadFromJsonAsync<GetDocumentDependencyChart>();
     }
 }
