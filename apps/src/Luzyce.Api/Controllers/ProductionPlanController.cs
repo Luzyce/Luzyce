@@ -272,7 +272,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         var fileContent = stream.ToArray();
         
         return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-            "Plan Produkcji.xlsx");
+            $"Plan Produkcji {DateOnly.ParseExact(strData, "yyyy-MM-dd"):yyMMdd}.xlsx");
 
         string GetTeamRomanNumeral(int? team) => team switch
         {
