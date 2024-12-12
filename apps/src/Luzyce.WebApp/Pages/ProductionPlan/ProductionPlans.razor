@@ -132,7 +132,7 @@
         var selectedDate = new DateOnly(productionPlansCalendar.CurrentDate.Year, productionPlansCalendar.CurrentDate.Month, int.Parse((string)objValue));
         if (productionPlansCalendar.productionPlans != null)
         {
-            isProductionPlanPrintDisabled = productionPlansCalendar.productionPlans.Any(p => p.Date == selectedDate && p.Status?.Id == 1);
+            isProductionPlanPrintDisabled = productionPlansCalendar.productionPlans.Any(p => p.Date != selectedDate);
         }
     }
     
