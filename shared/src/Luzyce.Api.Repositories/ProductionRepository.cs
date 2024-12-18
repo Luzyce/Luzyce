@@ -9,7 +9,6 @@ public class ProductionRepository(ApplicationDbContext applicationDbContext)
 {
     public List<GetProduct> GetProduction(GetProductionDto? productionFilter = null)
     {
-        var selectedMonth = productionFilter?.SelectedMonth;
         var query = applicationDbContext.Documents
             .Where(d => d.DocumentsDefinition != null && 
                         d.DocumentsDefinition.Code == DocumentsDefinitions.KW_CODE && 
