@@ -1,11 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>Luzyce.Shared</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Luzyce.Api.Db.AppDb\Luzyce.Api.Db.AppDb.csproj" />
+    <ProjectReference Include="..\shared\src\Luzyce.Api.Db.AppDb\Luzyce.Api.Db.AppDb.csproj" />
   </ItemGroup>
 </Project>

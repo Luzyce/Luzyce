@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>Luzyce.Shared</RootNamespace>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Luzyce.Services</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Luzyce.Api.Db.AppDb\Luzyce.Api.Db.AppDb.csproj" />
+    <ProjectReference Include="..\Luzyce.Services.Abstraction\Luzyce.Services.Abstraction.csproj" />
   </ItemGroup>
 </Project>

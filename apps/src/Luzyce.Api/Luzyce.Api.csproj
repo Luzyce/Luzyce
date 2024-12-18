@@ -27,6 +27,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Luzyce.Objects\Luzyce.Objects.csproj" />
     <ProjectReference Include="..\..\..\shared\src\Luzyce.Api.Core\Luzyce.Api.Core.csproj" />
     <ProjectReference Include="..\..\..\shared\src\Luzyce.Shared\Luzyce.Shared.csproj" />
     <ProjectReference Include="..\..\..\shared\src\Luzyce.Api.Db.AppDb\Luzyce.Api.Db.AppDb.csproj" />
