@@ -79,6 +79,7 @@ builder.Services.AddScoped<Luzyce.Api.Repositories.EventRepository>();
 builder.Services.AddScoped<Luzyce.Api.Repositories.DocumentDependencyChartRepository>();
 builder.Services.AddScoped<Luzyce.Api.Repositories.ProductionReportRepository>();
 builder.Services.AddScoped<Luzyce.Api.Repositories.WorkflowRepository>();
+builder.Services.AddScoped<Luzyce.Api.Repositories.ProductionRepository>();
 
 builder.Services.AddDbContext<ApplicationDbContext>();
 builder.Services.AddDbContext<SubiektDbContext>();

@@ -53,6 +53,8 @@
             <button class="btn btn-outline-secondary" type="button" id="printProdReport"
                     @onclick="PrintProductionRep" disabled="@isProdRepPrintDisabled">Wydrukuj</button>
         </div>
+        <br>
+        <a class="btn btn-primary" href="@("/production?MonthStr=" + productionPlansCalendar.CurrentDate.ToString("yyyy-MM-dd"))">Przejdź to produkcji</a>
     </div>
     <div class="col">
         <div class="legend" style="float: right">

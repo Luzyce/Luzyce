@@ -1,0 +1,178 @@
+﻿@page "/production"
+@using System.Globalization
+@using Luzyce.Shared.Models.Production
+@using Luzyce.WebApp.Services
+@using Microsoft.FluentUI.AspNetCore.Components.Extensions
+@using Luzyce.Shared.Tools
+@inject ProductionService ProductionService
+@inject IConfiguration Configuration
+@inject IJSRuntime Js
+
+@if (Month == null)
+{
+    <div class="container mt-4">
+        <div class="form-group">
+            <label for="monthPicker" class="form-label">Wybierz miesiąc:</label>
+            <div class="input-group">
+                <input type="month" id="monthPicker" class="form-control" @bind="SelectedMonth"/>
+                <button class="btn btn-primary" @onclick="SetMonth">Wybierz</button>
+            </div>
+        </div>
+    </div>
+    return;
+}
+
+@if (Products == null)
+{
+    <Loader/>
+    return;
+}
+
+@if (Month.GetValueOrDefault().Month == DateTime.Now.Month && Month.GetValueOrDefault().Year == DateTime.Now.Year)
+{
+    <div class="alert alert-warning">Wybrany miesiąc jeszcze się nie skończył</div>
+}
+
+@if (Month.GetValueOrDefault().Month > DateTime.Now.Month && Month.GetValueOrDefault().Year == DateTime.Now.Year || Month.GetValueOrDefault().Year > DateTime.Now.Year)
+{
+    <div class="alert alert-warning">Wybrany miesiąc jest w przyszłości</div>
+}
+
+<div class="d-flex justify-content-between mb-3">
+    <span class="btn" @onclick="PreviousMonth">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-left" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+            <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
+        </svg>
+    </span>
+    <h3>@Month.ToDateTime().ToString("MMMM yyyy", new CultureInfo("pl-PL"))</h3>
+    <span class="btn" @onclick="NextMonth">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-right" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M3.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L9.293 8 3.646 2.354a.5.5 0 0 1 0-.708"/>
+            <path fill-rule="evenodd" d="M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708"/>
+        </svg>
+    </span>
+</div>
+
+
+<div class="container mt-4">
+    <h1>Produkcja</h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Data</th>
+            <th>Klient</th>
+            <th>Zamówienie</th>
+            <th>Zmiana</th>
+            <th>Zespół</th>
+            <th>Hutnik</th>
+            <th>Klosz</th>
+            <th>Rodzaj</th>
+            <th>Brutto</th>
+            <th>Procent braków</th>
+            <th>Netto</th>
+            <th>WagaB</th>
+            <th>WagaN</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var product in Products)
+        {    
+            <tr>
+                <td>@product.Date.ToDateTime().ToString("dd.MM.yyyy")</td>
+                <td>@product.ClientName</td>
+                <td>@product.OrderNumber</td>
+                <td>@product.Shift</td>
+                <td>@product.Team</td>
+                <td>@product.HeadsOfMetallurgicalTeams</td>
+                <td>@product.Lampshade</td>
+                <td>@product.LampshadeVariant</td>
+                <td>@product.QuantityGross</td>
+                <td>
+                    @if (product.QuantityGross != 0)
+                    {
+                        var totalLossAndImprove = product.QuantityLoss + product.QuantityToImprove;
+                        var percentage = totalLossAndImprove / product.QuantityGross * 100;
+                        <div>@percentage.ToString("F2")%</div>
+                    }
+                    else
+                    {
+                        <div>0%</div>
+                    }
+                </td>
+                <td>@product.QuantityNetto</td>
+                <td>@product.WeightGross</td>
+                <td>@product.WeightNetto</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+<div class="container mt-4">
+    <button class="btn btn-primary" @onclick="PrintProduction">Wydrukuj</button>
+</div>
+
+@code
+
+{
+    [Parameter] [SupplyParameterFromQuery] public string MonthStr { get; set; } = string.Empty;
+
+    private DateOnly? Month { get; set; }
+    private DateTime SelectedMonth { get; set; } = DateTime.Now;
+    private List<GetProduct>? Products { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(MonthStr))
+        {
+            Month = DateOnly.ParseExact(MonthStr, "yyyy-MM-dd");
+
+            Products = await ProductionService.GetProductsAsync(new GetProductionDto
+            {
+                SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1)
+            });
+
+        }
+    }
+
+    private async Task SetMonth()
+    {
+        Month = new DateOnly(SelectedMonth.Year, SelectedMonth.Month, 1);
+        Products = await ProductionService.GetProductsAsync(new GetProductionDto
+        {
+            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1)
+        });
+    }
+    
+    private async Task PreviousMonth()
+    {
+        Month = Month.AddMonths(-1);
+        Products = await ProductionService.GetProductsAsync(new GetProductionDto
+        {
+            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1)
+        });
+    }
+
+    private async Task NextMonth()
+    {
+        Month = Month.AddMonths(1);
+        Products = await ProductionService.GetProductsAsync(new GetProductionDto
+        {
+            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1)
+        });
+    }
+
+    private async Task PrintProduction()
+    {
+        if (Month == null)
+        {
+            return;
+        }
+        
+        var selectedDate = Month.ToDateTime().ToString("yyyy-MM-dd");
+        
+        var url = Configuration["apiUrl"] + $"/api/production/downloadExcel/{selectedDate}?timestamp=1";
+        await Js.InvokeVoidAsync("open", url, "_blank");
+    }
+}
