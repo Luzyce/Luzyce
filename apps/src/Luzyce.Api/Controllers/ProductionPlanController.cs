@@ -156,7 +156,7 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftNumber.ToString()).SetFontSize(16),
             138, 610, 1, TextAlignment.CENTER, iTextVerticalAlignment.MIDDLE, 0);
         
-        doc.ShowTextAligned(new Paragraph(totalHours.ToString(CultureInfo.CurrentCulture)).SetFontSize(16),
+        doc.ShowTextAligned(new Paragraph(totalHours.ToString("F2", CultureInfo.CurrentCulture)).SetFontSize(16),
             195, 610, 1, TextAlignment.CENTER, iTextVerticalAlignment.MIDDLE, 0);
         
         doc.ShowTextAligned(new Paragraph(kwit.DocumentPositions[0].LampshadeNorm?.WeightBrutto.ToString()).SetFontSize(14),
