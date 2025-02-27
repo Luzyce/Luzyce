@@ -131,7 +131,7 @@
                     <a class="btn btn-primary btn-sm" href="@($"/productionPlan/editKwit?dateString={Date.ToString("yyyy-MM-dd")}&shift={Shift}&team={Team}&kwitId={item.Kwit?.Id}")">Edytuj</a>
                 </td>
                 <td>
-                    <button type="button" class="btn btn-secondary btn-sm" @onclick="@(() => PrintingService.Print(Configuration["apiUrl"] + "/api/productionPlan/kwit-" + item.Kwit.Id + ".pdf"))">
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick="@(() => PrintingService.Print(Configuration["apiUrl"] + "/api/productionPlan/kwit-" + item.Kwit.Id + ".pdf?timestamp=1"))">
                         Wydrukuj
                     </button>
                 </td>

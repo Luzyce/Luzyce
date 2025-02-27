@@ -9,7 +9,7 @@
         "Jwt__SigningKey": "dsbfkjsnbkfidnskihIKGutg234yg2bri8324griydsabdhjksabdfjuhigb5uyi8g5ubefbdsnbfndsk"
       },
       "dotnetRunMessages": true,
-      "applicationUrl": "http://192.168.20.153:5132"
+      "applicationUrl": "http://10.251.253.201:5132"
     },
     "https (Develop)": {
       "commandName": "Project",

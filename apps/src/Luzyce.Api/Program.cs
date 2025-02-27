@@ -5,7 +5,6 @@ using Luzyce.Api.Db.Subiekt.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using QuestPDF.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
@@ -94,8 +93,6 @@ builder.Services.AddCors(options =>
               .AllowAnyOrigin();
     });
 });
-
-QuestPDF.Settings.License = LicenseType.Community;
 
 var app = builder.Build();
 
