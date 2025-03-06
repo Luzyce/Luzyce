@@ -171,7 +171,9 @@ public class ProductionPlanController(ProductionPlanRepository productionPlanRep
         doc.ShowTextAligned(new Paragraph(kwit.ProductionPlanPositions?.ProductionPlan?.Date.ToString("dd.MM.yyyy")).SetFontSize(10),
             523, 610, 1, TextAlignment.LEFT, iTextVerticalAlignment.MIDDLE, 0);
         
-        doc.ShowTextAligned(new Paragraph(PolishRefactor.RemovePolishChars(kwit.DocumentPositions[0].OrderPositionForProduction?.Order?.Customer?.Name)).SetFontSize(8),
+        doc.ShowTextAligned(new Paragraph(new Text(
+                (PolishRefactor.RemovePolishChars(kwit.DocumentPositions[0].OrderPositionForProduction?.Order?.Customer?.Name) ?? "") 
+                is var s && s.Length > 15 ? s[..15] + "..." : s)).SetFontSize(8),
             358, 591, 1, TextAlignment.LEFT, iTextVerticalAlignment.MIDDLE, 0);
         
         doc.ShowTextAligned(new Paragraph(PolishRefactor.RemovePolishChars(
