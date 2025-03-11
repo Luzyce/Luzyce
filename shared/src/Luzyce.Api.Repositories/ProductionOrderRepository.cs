@@ -387,7 +387,9 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
 
             foreach (var position in order.Positions)
             {
-                var lampshadeCode = Regex.Match(position.Symbol, @"^[A-Z]{2}\d{3,4}").Value;
+                var lampshadeCode = string.IsNullOrEmpty(Regex.Match(position.Symbol, @"^[A-Z]{2}\d{3,4}").Value)
+                    ? position.Symbol
+                    : Regex.Match(position.Symbol, @"^[A-Z]{2}\d{3,4}").Value;
 
                 var lampshade = applicationDbContext.Lampshades
                     .FirstOrDefault(l => l.Code == lampshadeCode);
@@ -399,7 +401,6 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                         Code = lampshadeCode
                     };
                     applicationDbContext.Lampshades.Add(lampshade);
-                    applicationDbContext.SaveChanges();
                 }
 
                 var orderPositionForProduction = new OrderPositionForProduction
@@ -408,7 +409,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                     OrderId = order.Id,
                     OrderNumber = order.Number,
                     Symbol = position.Symbol,
-                    ProductId = lampshade.Id,
+                    Product = lampshade,
                     Description = position.Description,
                     OrderPositionLp = position.OrderPositionLp,
                     Quantity = position.Quantity,
@@ -469,25 +470,43 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
             {
                 var lampshade = applicationDbContext.Lampshades
                     .FirstOrDefault(l => l.Code == position.Symbol);
+                
+                if (lampshade == null)
+                {
+                    var code = Regex.Match(position.Symbol, @"^[A-Z]{2}\d{3,4}").Value;
+                    
+                    if (code == "")
+                    {
+                        transaction.Rollback();
+                        return null;
+                    }
+                    
+                    lampshade = new()
+                    {
+                        Code = code
+                    };
+                    applicationDbContext.Lampshades.Add(lampshade);
+                }
+                
                 var variant = applicationDbContext.LampshadeVariants
                     .FirstOrDefault(l => l.Id == position.VariantId);
 
-                if (lampshade == null || variant == null)
+                if (variant == null)
                 {
                     transaction.Rollback();
                     return null;
                 }
                     
                 var lampshadeNorms = applicationDbContext.LampshadeNorms
-                    .FirstOrDefault(l => l.LampshadeId == lampshade.Id
-                                         && l.VariantId == variant.Id);
+                    .FirstOrDefault(l => l.Lampshade == lampshade
+                                         && l.Variant == variant);
                     
                 if (lampshadeNorms == null)
                 {
-                    lampshadeNorms = new LampshadeNorm
+                    lampshadeNorms = new()
                     {
-                        LampshadeId = lampshade.Id,
-                        VariantId = variant.Id
+                        Lampshade = lampshade,
+                        Variant = variant,
                     };
                     applicationDbContext.LampshadeNorms.Add(lampshadeNorms);
                     applicationDbContext.SaveChanges();
@@ -500,8 +519,8 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                     QuantityGross = position.Gross,
                     OperatorId = productionOrder.OperatorId,
                     StartTime = DateTime.Now.ConvertToEuropeWarsaw(),
-                    LampshadeId = lampshade.Id,
-                    LampshadeNormId = lampshadeNorms.Id,
+                    Lampshade = lampshade,
+                    LampshadeNorm = lampshadeNorms,
                     LampshadeDekor = position.Dekor,
                     OrderPositionForProductionId = position.DocumentPositionId,
                     SubiektProductId = position.SubiektProductId

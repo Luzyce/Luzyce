@@ -348,23 +348,20 @@
 
     private void OnQuantityInput(int positionId, ChangeEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(e.Value?.ToString()))
-        {
-            return;
-        }
-
         var isValid = int.TryParse(e.Value?.ToString(), out var newQuantity);
 
-        if (isValid && newQuantity >= 0)
+        if (!isValid || newQuantity < 0)
         {
-            if (newQuantity != 0)
-            {
-                productionOrderPositions[positionId] = newQuantity;
-            }
-            else
-            {
-                productionOrderPositions.Remove(positionId);
-            }
+            newQuantity = 0;
+        }
+
+        if (newQuantity != 0)
+        {
+            productionOrderPositions[positionId] = newQuantity;
+        }
+        else
+        {
+            productionOrderPositions.Remove(positionId);
         }
 
         isAnyProductionOrderPositions = productionOrderPositions.Values.Any(quantity => quantity != 0);
