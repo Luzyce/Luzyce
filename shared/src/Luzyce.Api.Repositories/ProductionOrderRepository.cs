@@ -467,7 +467,6 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
             };
                 
             applicationDbContext.Documents.Add(document);
-            applicationDbContext.SaveChanges();
 
             foreach (var position in productionOrder.ProductionOrderPositions)
             {
@@ -516,7 +515,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
 
                 var documentPosition = new DocumentPositions
                 {
-                    DocumentId = document.Id,
+                    Document = document,
                     QuantityNetto = position.Net,
                     QuantityGross = position.Gross,
                     OperatorId = productionOrder.OperatorId,
@@ -525,7 +524,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                     LampshadeNorm = lampshadeNorms,
                     LampshadeDekor = position.Dekor,
                     OrderPositionForProductionId = position.DocumentPositionId,
-                    SubiektProductId = position.SubiektProductId
+                    SubiektProductId = position.SubiektProductId,
                 };
                 applicationDbContext.DocumentPositions.Add(documentPosition);
             }
