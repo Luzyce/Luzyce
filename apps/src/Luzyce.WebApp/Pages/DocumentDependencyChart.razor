@@ -87,11 +87,6 @@
     {
         foreach (var derivatives in derivativesList)
         {
-            if (level == 3 && productionPlanIds.Contains(derivatives.Id))
-            {
-                continue;
-            }
-
             if (derivativesList.IndexOf(derivatives) != 0)
             {
                 lowestY += 100;
@@ -102,7 +97,10 @@
             if (level == 3)
             {
                 positionY -= 12;
-                productionPlanIds.Add(derivatives.Id);
+                if (!productionPlanIds.Contains(derivatives.Id))
+                {
+                    productionPlanIds.Add(derivatives.Id);
+                }
             }
 
             var document = diagram.Nodes.Add(new DocumentNode(position:

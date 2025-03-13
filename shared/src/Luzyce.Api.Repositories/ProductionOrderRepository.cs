@@ -352,14 +352,10 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         try
         {
             var existingOrder = applicationDbContext.OrdersForProduction
-                .FirstOrDefault(o => o.Id == order.Id);
+                .Include(orderForProduction => orderForProduction.Customer)
+                .FirstOrDefault(o => o.SubiektId == order.Id);
 
-            if (existingOrder != null)
-            {
-                return CreateProdOrder(productionOrder, order.Id, transaction);
-            }
-
-            var customer = applicationDbContext.Customers
+            var customer = existingOrder?.Customer ?? applicationDbContext.Customers
                 .FirstOrDefault(c => c.Id == order.CustomerId);
 
             if (customer == null)
@@ -373,15 +369,23 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
 
                 applicationDbContext.Customers.Add(customer);
             }
+            
+            var version = applicationDbContext.OrdersForProduction
+                .Where(o => o.SubiektId == order.SubiektId)
+                .Select(o => o.Version)
+                .ToList()
+                .DefaultIfEmpty(0)
+                .Max() + 1;
 
             var orderForProduction = new OrderForProduction
             {
-                Id = order.Id,
                 Date = order.Date,
                 Number = order.Number,
                 OriginalNumber = order.OriginalNumber,
                 CustomerId = customer.Id,
-                DeliveryDate = order.DeliveryDate
+                DeliveryDate = order.DeliveryDate,
+                SubiektId = order.SubiektId,
+                Version = version,
             };
             applicationDbContext.OrdersForProduction.Add(orderForProduction);
 
@@ -405,8 +409,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
 
                 var orderPositionForProduction = new OrderPositionForProduction
                 {
-                    Id = position.Id,
-                    OrderId = order.Id,
+                    Order = orderForProduction,
                     OrderNumber = order.Number,
                     Symbol = position.Symbol,
                     Product = lampshade,
@@ -425,7 +428,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
 
             applicationDbContext.SaveChanges();
 
-            return CreateProdOrder(productionOrder, order.Id, transaction);
+            return CreateProdOrder(productionOrder, orderForProduction, transaction);
         }
         catch
         {
@@ -434,7 +437,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         }
     }
 
-    private int? CreateProdOrder(ProductionOrder productionOrder, int OrderId, IDbContextTransaction transaction)
+    private int? CreateProdOrder(ProductionOrder productionOrder, OrderForProduction orderForProduction, IDbContextTransaction transaction)
     {
         try
         {
@@ -460,7 +463,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                 UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw(),
                 ClosedAt = null,
                 StatusId = 1,
-                OrderId = OrderId
+                Order = orderForProduction,
             };
                 
             applicationDbContext.Documents.Add(document);
@@ -509,7 +512,6 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                         Variant = variant,
                     };
                     applicationDbContext.LampshadeNorms.Add(lampshadeNorms);
-                    applicationDbContext.SaveChanges();
                 }
 
                 var documentPosition = new DocumentPositions

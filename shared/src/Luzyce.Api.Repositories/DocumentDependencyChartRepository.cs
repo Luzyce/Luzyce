@@ -44,38 +44,6 @@ public class DocumentDependencyChartRepository(ApplicationDbContext applicationD
         }
 
         var order = applicationDbContext.OrdersForProduction
-            .Include(doc => doc.Documents)
-            .ThenInclude(doc => doc.DocumentPositions)
-            .ThenInclude(pos => pos.Lampshade)
-            .Include(doc => doc.Documents)
-            .ThenInclude(doc => doc.DocumentPositions)
-            .ThenInclude(pos => pos.LampshadeNorm)
-            .ThenInclude(norm => norm!.Variant)
-            .Include(doc => doc.Documents)
-            .ThenInclude(doc => doc.DocumentPositions)
-            .ThenInclude(pos => pos.ProductionPlanPositions)
-            .ThenInclude(planPos => planPos.ProductionPlan)
-            .ThenInclude(plan => plan!.Shift)
-            .Include(doc => doc.Documents)
-            .ThenInclude(doc => doc.DocumentPositions)
-            .ThenInclude(pos => pos.ProductionPlanPositions)
-            .ThenInclude(planPos => planPos.ProductionPlan)
-            .ThenInclude(plan => plan!.Positions)
-            .ThenInclude(pp => pp.Kwit)
-            .ThenInclude(document => document.DocumentPositions)
-            .ThenInclude(documentPositions => documentPositions.Lampshade)
-            .Include(doc => doc.Documents)
-            .ThenInclude(doc => doc.DocumentsDefinition)
-            .Include(orderForProduction => orderForProduction.Documents)
-            .ThenInclude(document => document.DocumentPositions)
-            .ThenInclude(documentPositions => documentPositions.ProductionPlanPositions)
-            .ThenInclude(productionPlanPositions => productionPlanPositions.ProductionPlan)
-            .ThenInclude(productionPlan => productionPlan!.Positions)
-            .ThenInclude(productionPlanPositions => productionPlanPositions.Kwit)
-            .ThenInclude(document => document.DocumentPositions)
-            .ThenInclude(documentPositions => documentPositions.LampshadeNorm)
-            .ThenInclude(lampshadeNorm => lampshadeNorm!.Variant)
-            .Include(o => o.OrderPosition)
             .FirstOrDefault(x => x.Id == orderId);
 
         if (order == null)
@@ -84,8 +52,33 @@ public class DocumentDependencyChartRepository(ApplicationDbContext applicationD
         }
 
         var documentDependencyChart = CreateOrderChart(order);
+        
+        var relevantDocuments = applicationDbContext.Documents
+            .Include(doc => doc.DocumentPositions)
+            .ThenInclude(pos => pos.Lampshade)
+            .Include(doc => doc.DocumentPositions)
+            .ThenInclude(pos => pos.LampshadeNorm)
+            .ThenInclude(norm => norm!.Variant)
+            .Include(doc => doc.DocumentPositions)
+            .ThenInclude(pos => pos.ProductionPlanPositions)
+            .ThenInclude(planPos => planPos.ProductionPlan)
+            .ThenInclude(plan => plan!.Shift)
+            .Include(doc => doc.DocumentPositions)
+            .ThenInclude(pos => pos.ProductionPlanPositions)
+            .ThenInclude(planPos => planPos.ProductionPlan)
+            .ThenInclude(plan => plan!.Positions)
+            .ThenInclude(pp => pp.Kwit)
+            .ThenInclude(document => document.DocumentPositions)
+            .ThenInclude(documentPositions => documentPositions.Lampshade)
+            .Include(doc => doc.DocumentPositions)
+            .ThenInclude(documentPositions => documentPositions.LampshadeNorm)
+            .ThenInclude(lampshadeNorm => lampshadeNorm!.Variant)
+            .Include(document => document.DocumentPositions)
+            .ThenInclude(documentPositions => documentPositions.ProductionPlanPositions).ThenInclude(productionPlanPositions => productionPlanPositions.ProductionPlan).ThenInclude(productionPlan => productionPlan.Positions).ThenInclude(productionPlanPositions => productionPlanPositions.DocumentPosition)
+            .Where(doc => doc.Order != null && doc.Order.SubiektId == order.SubiektId)
+            .ToList();
 
-        foreach (var productionOrder in order.Documents)
+        foreach (var productionOrder in relevantDocuments)
         {
             var productionOrderChart = CreateProductionOrderChart(productionOrder);
             documentDependencyChart.Derivatives?.Add(productionOrderChart);
@@ -103,7 +96,10 @@ public class DocumentDependencyChartRepository(ApplicationDbContext applicationD
 
                 foreach (var productionPlanPosition in productionPlan.Positions)
                 {
-                    productionPlanChart.Derivatives?.Add(CreateKwitChart(productionPlanPosition));
+                    if (productionPlanPosition.DocumentPosition?.Document == productionOrder)
+                    {
+                        productionPlanChart.Derivatives?.Add(CreateKwitChart(productionPlanPosition));
+                    }
                 }
             }
         }

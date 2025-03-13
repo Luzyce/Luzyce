@@ -9,7 +9,7 @@ public static class ProductionOrderMappers
     {
         return new Order()
         {
-            Id = dto.Order.Id,
+            SubiektId = dto.Order.Id,
             Date = dto.Order.Date,
             Number = dto.Order.Number,
             CustomerId = dto.Order.CustomerId,

@@ -3,6 +3,8 @@ namespace Luzyce.Api.Domain.Models;
 public class Order
 {
     public int Id { get; set; }
+    public int SubiektId { get; set; }
+    public int Version { get; set; }
     public DateTime Date { get; set; }
     public string Number { get; set; } = string.Empty;
     public string? OriginalNumber { get; set; } = string.Empty;
