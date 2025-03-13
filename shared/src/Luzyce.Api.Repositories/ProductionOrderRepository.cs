@@ -512,6 +512,9 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                     };
                     applicationDbContext.LampshadeNorms.Add(lampshadeNorms);
                 }
+                
+                var orderPositionForProduction = applicationDbContext.OrderPositionsForProduction
+                    .FirstOrDefault(op => op.SubiektId == position.DocumentPositionId);
 
                 var documentPosition = new DocumentPositions
                 {
@@ -523,7 +526,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                     Lampshade = lampshade,
                     LampshadeNorm = lampshadeNorms,
                     LampshadeDekor = position.Dekor,
-                    // OrderPositionForProduction = position.,
+                    OrderPositionForProductionId = orderPositionForProduction?.Id,
                     SubiektProductId = position.SubiektProductId,
                 };
                 applicationDbContext.DocumentPositions.Add(documentPosition);
