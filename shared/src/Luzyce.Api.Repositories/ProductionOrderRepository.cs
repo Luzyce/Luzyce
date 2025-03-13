@@ -523,7 +523,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                     Lampshade = lampshade,
                     LampshadeNorm = lampshadeNorms,
                     LampshadeDekor = position.Dekor,
-                    OrderPositionForProductionId = position.DocumentPositionId,
+                    // OrderPositionForProduction = position.,
                     SubiektProductId = position.SubiektProductId,
                 };
                 applicationDbContext.DocumentPositions.Add(documentPosition);
