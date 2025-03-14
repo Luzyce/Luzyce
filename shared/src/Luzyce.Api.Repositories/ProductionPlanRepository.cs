@@ -482,7 +482,8 @@ public class ProductionPlanRepository(ApplicationDbContext applicationDbContext)
         
         foreach (var productionPlan in productionPlans.Where(x => x.Positions.Count > 0).ToList())
         {
-            if (productionPlan.Positions.All(x => x.DocumentPosition?.LampshadeNorm?.QuantityPerChange != null) &&
+            if (productionPlan.Positions.All(x => x.DocumentPosition?.LampshadeNorm?.QuantityPerChange != null && 
+                    x.DocumentPosition.LampshadeNorm.QuantityPerChange != 0) && 
                 productionPlan.Positions.Sum(x => x.Quantity / (decimal)x.DocumentPosition?.LampshadeNorm?.QuantityPerChange! * 8) == 8)
             {
                 productionPlan.StatusId = productionPlan.Positions.All(x => x.Kwit.All(k => k.StatusId == 3)) ? 5 : 3;
