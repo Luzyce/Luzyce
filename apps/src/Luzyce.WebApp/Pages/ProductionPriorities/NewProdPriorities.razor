@@ -15,7 +15,7 @@
     return;
 }
 
-@if (Date != default && Shift != 0 && Team != 0)
+@if (Date != null && Shift != 0 && Team != 0)
 {
     <div class="alert alert-warning" role="alert">
         Wybierasz pozycję dla @DateStringPressed Zmiana: @Shift Zespół: @Team
@@ -28,6 +28,21 @@
     }
 </style>
 
+<div class="row">
+    <div class="col form-group">
+        <label>Statusy:</label>
+        <select class="form-select" @bind="status" @oninput="OnStatusChanged">
+            <option value="0">Otwarte</option>
+            <option value="1">Ukryte</option>
+        </select>
+    </div>
+    <div class="col form-group">
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a class="btn btn-primary" href="@("productionOrder/new")">Nowe Zlecenie Produkcji</a>
+        </div>
+    </div>
+</div>
+<br>
 <div id="alertPlaceholder"></div>
 <div id="sortable-table">
     <table class="table">
@@ -41,7 +56,16 @@
             <th scope="col">nr zlecenia</th>
             <th scope="col">Klient</th>
             <th scope="col">Uwagi</th>
-            <th scope="col">Dodaj</th>
+            @if (status == 0)
+            {
+                <th scope="col">Ukryj</th>
+                <th scope="col">Dodaj</th>
+            }
+            else
+            {
+                <th scope="col">Przywróć</th>
+                <th scope="col">Czas</th>
+            }
         </tr>
         </thead>
         <tbody>
@@ -68,36 +92,52 @@
                         @item.Remarks
                     }
                 </td>
-                <td style="width: 80px">
-                    <input type="number" class="form-control form-control-sm" min="0" @oninput="(e) => OnPositionInput(item.Id, e)">
-                </td>
+                @if (status == 0)
+                {
+                    <td>
+                        <button @onclick="() => DeletePosition(item.Id)" class="btn btn-danger btn-sm">Ukryj</button>
+                    </td>
+                    <td style="width: 80px">
+                        <input type="number" class="form-control form-control-sm" min="0" @oninput="(e) => OnPositionInput(item.Id, e)">
+                    </td>
+                }
+                else
+                {
+                    <td>
+                        <button @onclick="() => RestorePosition(item.Id)" class="btn btn-success btn-sm">Przywróć</button>
+                    </td>
+                    <td>@TimeAgo(item.ExecutionDate ?? DateTime.Now)</td>
+                }
             </tr>
         }
         </tbody>
     </table>
 </div>
 
-<div style="float: right;">
-    <button class="btn btn-primary" @onclick="CheckParametersAndHandleClick" disabled="@IsAddButtonDisabled">Dodaj pozycje do planu prod</button>
-    @* <button class="btn btn-primary" @onclick="OnSave">Zapisz</button> *@
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmationModal">
-        Zapisz
-    </button>
-</div>
+@if (status == 0)
+{
+    <div style="float: right;">
+        <button class="btn btn-primary" @onclick="CheckParametersAndHandleClick" disabled="@IsAddButtonDisabled">Dodaj pozycje do planu prod</button>
+        @* <button class="btn btn-primary" @onclick="OnSave">Zapisz</button> *@
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmationModal">
+            Zapisz
+        </button>
+    </div>
 
-<div class="modal fade" id="calendarModal" tabindex="-1" aria-labelledby="calendarModalLabel" data-bs-keyboard="false" data-bs-backdrop="static" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="calendarModalLabel">Dodawanie pozycji do planu prod</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="() => productionPlansCalendar.StopRefreshing()"></button>
-            </div>
-            <div class="modal-body">
-                <ProductionPlansCalendar AutoStartRefreshing="false" @ref="productionPlansCalendar" OnItemClick="HandleItemClick"/>
+    <div class="modal fade" id="calendarModal" tabindex="-1" aria-labelledby="calendarModalLabel" data-bs-keyboard="false" data-bs-backdrop="static" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="calendarModalLabel">Dodawanie pozycji do planu prod</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="() => productionPlansCalendar.StopRefreshing()"></button>
+                </div>
+                <div class="modal-body">
+                    <ProductionPlansCalendar AutoStartRefreshing="false" @ref="productionPlansCalendar" OnItemClick="HandleItemClick"/>
+                </div>
             </div>
         </div>
     </div>
-</div>
+}
 
 <div class="modal fade" id="remarkModal" tabindex="-1" aria-labelledby="remarkModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -112,6 +152,7 @@
         </div>
     </div>
 </div>
+
 
 <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -128,7 +169,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> 
 
 <script>
     window.initializeSortable = (dotNetHelper) => {
@@ -241,6 +282,7 @@
     private string selectedRemark = string.Empty;
     private QuantitiesOnPlans quantitiesOnPlansComponent;
     private const string unit = "szt.";
+    private int status;
 
     protected override async Task OnInitializedAsync()
     {
@@ -291,6 +333,27 @@
         await Js.InvokeVoidAsync("closeModalById", "confirmationModal");
     }
 
+    private async Task OnStatusChanged(ChangeEventArgs e)
+    {
+        status = int.Parse(e.Value?.ToString() ?? string.Empty);
+        Console.WriteLine($"Status changed to: {status}");
+
+        if (status == 0)
+        {
+            getOrdersPositionsResponse = await ProdPrioritiesService.GetOrdersPositions();
+        }
+        else
+        {
+            getOrdersPositionsResponse = await ProdPrioritiesService.GetDeletedPositions();
+        }
+
+        sortedList.Clear();
+        for (var i = 0; i < getOrdersPositionsResponse!.OrdersPositions.Count; i++)
+        {
+            sortedList.Add(i * 10, getOrdersPositionsResponse.OrdersPositions[i]);
+        }
+        await InvokeAsync(StateHasChanged);
+    }
 
     private void OnPositionInput(int positionId, ChangeEventArgs e)
     {
@@ -320,7 +383,7 @@
 
     private async Task CheckParametersAndHandleClick()
     {
-        if (Date != default && Shift != 0 && Team != 0 && Date != null)
+        if (Date != null && Shift != 0 && Team != 0 && Date != null)
         {
             await HandleItemClick((DateOnly.ParseExact(DateString, "yyyy-MM-dd"), Shift, Team));
         }
@@ -351,5 +414,48 @@
     private void OpenRemark(GetProductionOrderPosition position)
     {
         selectedRemark = position.Remarks;
+    }
+
+    private async Task DeletePosition(int positionId)
+    {
+        var position = getOrdersPositionsResponse?.OrdersPositions.FirstOrDefault(x => x.Id == positionId);
+        
+        if (position != null)
+        {
+            getOrdersPositionsResponse?.OrdersPositions.Remove(position);
+            sortedList.Remove(sortedList.First(x => x.Value.Id == positionId).Key);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    
+    private async Task RestorePosition(int positionId)
+    {
+        var position = getOrdersPositionsResponse?.OrdersPositions.FirstOrDefault(x => x.Id == positionId);
+
+        if (position != null)
+        {
+            Console.WriteLine($"Restoring position {positionId}");
+            await ProdPrioritiesService.RestorePosition(positionId);
+            getOrdersPositionsResponse = await ProdPrioritiesService.GetDeletedPositions();
+            StateHasChanged();
+        }
+    }
+    
+    private static string TimeAgo(DateTime dateTime)
+    {
+        var timeSpan = DateTime.Now - dateTime;
+
+        if (timeSpan.TotalMinutes < 1)
+            return "przed chwilą";
+        if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes} minut temu";
+        if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours} godzin temu";
+        if (timeSpan.TotalDays < 7)
+            return $"{(int)timeSpan.TotalDays} dni temu";
+        if (timeSpan.TotalDays > 7)
+            return "ponad tydzień temu";
+
+        return dateTime.ToString("g", new CultureInfo("pl-PL"));
     }
 }

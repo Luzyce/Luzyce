@@ -192,7 +192,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                 .Include(dp => dp.OrderPositionForProduction)
                 .Include(dp => dp.OrderPositionForProduction!.Order)
                 .Include(dp => dp.OrderPositionForProduction!.Order!.Customer)
-                .Where(dp => dp.Document!.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID && dp.Document.StatusId == 1)
+                .Where(dp => dp.Document!.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID && dp.IsDeleted == false)
                 .Select(dp => new GetProductionOrderPosition
                 {
                     Id = dp.Id,
@@ -253,98 +253,114 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         };
     }
     
-    public GetProductionOrder? GetProductionOrderByNumber(string number)
+    public GetOrdersPositionsResponse GetDeletedPositions()
     {
-        var document = applicationDbContext.Documents
-            .Where(d => d.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID && d.Number == number)
-            .Include(d => d.Warehouse)
-            .Include(d => d.DocumentsDefinition)
-            .Include(d => d.Operator)
-            .Include(d => d.Status)
-            .FirstOrDefault();
-
-        if (document == null)
+        return new()
         {
-            return null;
-        }
-
-        var positions = applicationDbContext.DocumentPositions
-            .Where(dp => dp.DocumentId == document.Id)
-            .Include(dp => dp.Lampshade)
-            .Include(dp => dp.LampshadeNorm)
-            .ThenInclude(ln => ln!.Variant)
-            .Include(op => op.OrderPositionForProduction)
-            .Select(dp => new GetProductionOrderPosition
-            {
-                Id = dp.Id,
-                QuantityNetto = dp.QuantityNetto,
-                QuantityGross = dp.QuantityGross,
-                ExecutionDate = dp.EndTime,
-                Lampshade = new GetLampshade
+            OrdersPositions = new(applicationDbContext.DocumentPositions
+                .Include(dp => dp.Document)
+                .Include(dp => dp.Lampshade)
+                .Include(dp => dp.LampshadeNorm)
+                    .ThenInclude(ln => ln!.Variant)
+                .Include(dp => dp.OrderPositionForProduction)
+                .Include(dp => dp.OrderPositionForProduction!.Order)
+                .Include(dp => dp.OrderPositionForProduction!.Order!.Customer)
+                .Where(dp => dp.Document!.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID && dp.IsDeleted == true)
+                .Select(dp => new GetProductionOrderPosition
                 {
-                    Id = dp.Lampshade!.Id,
-                    Code = dp.Lampshade.Code
-                },
-                LampshadeNorm = new GetLampshadeNorm
-                {
-                    Id = dp.LampshadeNorm!.Id,
-                    Lampshade = new GetLampshade
+                    Id = dp.Id,
+                    QuantityNetto = dp.QuantityNetto,
+                    QuantityGross = dp.QuantityGross,
+                    QuantityOnPlans = dp.ProductionPlanPositions.Sum(pp => pp.Quantity),
+                    QuantitiesOnPlans = dp.ProductionPlanPositions
+                        .Select(pp => new GetQuantityOnPlan
+                        {
+                            Quantity = pp.Quantity,
+                            QuantityNetto = pp.Kwit.First().DocumentPositions.First().QuantityNetto,
+                            QuantityLoss = pp.Kwit.First().DocumentPositions.First().QuantityLoss,
+                            QuantityToImprove = pp.Kwit.First().DocumentPositions.First().QuantityToImprove,
+                            Date = pp.ProductionPlan!.Date,
+                            Shift = pp.ProductionPlan.Shift!.ShiftNumber,
+                            Team = pp.ProductionPlan.Team,
+                            KwitId = pp.Kwit.First().Id.ToString(),
+                            KwitName = pp.Kwit.First().Number,
+                            KwitNumber = pp.Kwit.First().DocNumber.ToString()
+                        })
+                        .ToList(),
+                    ExecutionDate = dp.EndTime,
+                    Lampshade = new()
                     {
-                        Id = dp.Lampshade.Id,
+                        Id = dp.Lampshade!.Id,
                         Code = dp.Lampshade.Code
                     },
-                    Variant = new GetVariantResponseDto
+                    LampshadeNorm = new()
                     {
-                        Id = dp.LampshadeNorm.Variant!.Id,
-                        Name = dp.LampshadeNorm.Variant.Name,
-                        ShortName = dp.LampshadeNorm.Variant.ShortName
+                        Id = dp.LampshadeNorm!.Id,
+                        Lampshade = new()
+                        {
+                            Id = dp.Lampshade.Id,
+                            Code = dp.Lampshade.Code
+                        },
+                        Variant = new()
+                        {
+                            Id = dp.LampshadeNorm.Variant!.Id,
+                            Name = dp.LampshadeNorm.Variant.Name,
+                            ShortName = dp.LampshadeNorm.Variant.ShortName
+                        },
+                        QuantityPerChange = dp.LampshadeNorm.QuantityPerChange ?? 0,
+                        MethodOfPackaging = dp.LampshadeNorm.MethodOfPackaging,
+                        QuantityPerPack = dp.LampshadeNorm.QuantityPerPack ?? 0
                     },
-                    QuantityPerChange = dp.LampshadeNorm.QuantityPerChange ?? 0,
-                    MethodOfPackaging = dp.LampshadeNorm.MethodOfPackaging,
-                    QuantityPerPack = dp.LampshadeNorm.QuantityPerPack ?? 0,
-                },
-                LampshadeDekor = dp.LampshadeDekor,
-                Remarks = dp.Remarks,
-                NumberOfChanges = dp.po_NumberOfChanges,
-                QuantityMade = dp.po_QuantityMade,
-                ProductId = dp.SubiektProductId ?? 0,
-                Unit = dp.OrderPositionForProduction!.Unit!
-            })
-            .ToList();
-
-        return new GetProductionOrder
-        {
-            Id = document.Id,
-            DocNumber = document.DocNumber,
-            Warehouse = new GetWarehouseResponseDto
-            {
-                Id = document.Warehouse!.Id,
-                Code = document.Warehouse.Code
-            },
-            Year = document.Year,
-            Number = document.Number,
-            DocumentsDefinition = new GetDocumentsDefinitionResponseDto
-            {
-                Id = document.DocumentsDefinition!.Id,
-                Code = document.DocumentsDefinition.Code
-            },
-            User = new GetUserResponseDto
-            {
-                Id = document.Operator!.Id,
-                Name = document.Operator.Name
-            },
-            CreatedAt = document.CreatedAt,
-            UpdatedAt = document.UpdatedAt,
-            ClosedAt = document.ClosedAt,
-            Status = new GetStatusResponseDto
-            {
-                Id = document.Status!.Id,
-                Name = document.Status.Name,
-                Priority = document.Status.Priority
-            },
-            Positions = positions
-        }; 
+                    LampshadeDekor = dp.LampshadeDekor,
+                    Remarks = dp.Remarks,
+                    NumberOfChanges = dp.po_NumberOfChanges,
+                    QuantityMade = dp.po_QuantityMade,
+                    ProductId = dp.SubiektProductId ?? 0,
+                    Unit = dp.OrderPositionForProduction!.Unit!,
+                    ProductionOrderNumber = dp.Document!.Number,
+                    Client = dp.OrderPositionForProduction.Order!.Customer!.Name,
+                    Priority = dp.Priority ?? 0
+                })
+                .ToList()
+                .OrderByDescending(x => x.ExecutionDate)
+                .ThenBy(x => x.Priority))
+        };
     }
+    
+    public int RestorePosition(int id)
+    {
+        var position = applicationDbContext.DocumentPositions
+            .FirstOrDefault(dp => dp.Id == id);
+
+        if (position == null)
+        {
+            return 0;
+        }
+
+        position.IsDeleted = false;
+        position.EndTime = null;
+        position.Priority = null;
+        applicationDbContext.SaveChanges();
+
+        return 1;
+    }
+    
+    public int DeletePosition(int id)
+    {
+        var position = applicationDbContext.DocumentPositions
+            .FirstOrDefault(dp => dp.Id == id);
+
+        if (position == null)
+        {
+            return 0;
+        }
+
+        position.IsDeleted = true;
+        applicationDbContext.SaveChanges();
+
+        return 1;
+    }
+
     public int? SaveProdOrder(Order order, ProductionOrder productionOrder)
     {
         using var transaction = applicationDbContext.Database.BeginTransaction();
@@ -428,114 +444,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
 
             applicationDbContext.SaveChanges();
 
-            return CreateProdOrder(productionOrder, orderForProduction, transaction);
-        }
-        catch
-        {
-            transaction.Rollback();
-            return null;
-        }
-    }
-
-    private int? CreateProdOrder(ProductionOrder productionOrder, OrderForProduction orderForProduction, IDbContextTransaction transaction)
-    {
-        try
-        {
-            var currentYear = DateTime.Now.ConvertToEuropeWarsaw().Year;
-            var docNumber = applicationDbContext.Documents
-                .Where(d => d.WarehouseId == Warehouses.PROD_ID
-                            && d.Year == currentYear
-                            && d.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID)
-                .Select(d => d.DocNumber)
-                .ToList()
-                .DefaultIfEmpty(0)
-                .Max() + 1;
-
-            var document = new Document
-            {
-                DocNumber = docNumber,
-                WarehouseId = Warehouses.PROD_ID,
-                Year = currentYear,
-                Number = $"{Warehouses.PROD_CODE}/{docNumber:D4}/{DocumentsDefinitions.ZP_CODE}/{currentYear}",
-                DocumentsDefinitionId = DocumentsDefinitions.ZP_ID,
-                OperatorId = productionOrder.OperatorId,
-                CreatedAt = DateTime.Now.ConvertToEuropeWarsaw(),
-                UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw(),
-                ClosedAt = null,
-                StatusId = 1,
-                Order = orderForProduction,
-            };
-                
-            applicationDbContext.Documents.Add(document);
-
-            foreach (var position in productionOrder.ProductionOrderPositions)
-            {
-                var lampshade = applicationDbContext.Lampshades
-                    .FirstOrDefault(l => l.Code == position.Symbol);
-                
-                if (lampshade == null)
-                {
-                    var code = Regex.Match(position.Symbol, @"^[A-Z]{2}\d{3,4}").Value;
-                    
-                    if (code == "")
-                    {
-                        transaction.Rollback();
-                        return null;
-                    }
-                    
-                    lampshade = new()
-                    {
-                        Code = code
-                    };
-                    applicationDbContext.Lampshades.Add(lampshade);
-                }
-                
-                var variant = applicationDbContext.LampshadeVariants
-                    .FirstOrDefault(l => l.Id == position.VariantId);
-
-                if (variant == null)
-                {
-                    transaction.Rollback();
-                    return null;
-                }
-                    
-                var lampshadeNorms = applicationDbContext.LampshadeNorms
-                    .FirstOrDefault(l => l.Lampshade == lampshade
-                                         && l.Variant == variant);
-                    
-                if (lampshadeNorms == null)
-                {
-                    lampshadeNorms = new()
-                    {
-                        Lampshade = lampshade,
-                        Variant = variant,
-                    };
-                    applicationDbContext.LampshadeNorms.Add(lampshadeNorms);
-                }
-                
-                var orderPositionForProduction = applicationDbContext.OrderPositionsForProduction
-                    .FirstOrDefault(op => op.SubiektId == position.DocumentPositionId);
-
-                var documentPosition = new DocumentPositions
-                {
-                    Document = document,
-                    QuantityNetto = position.Net,
-                    QuantityGross = position.Gross,
-                    OperatorId = productionOrder.OperatorId,
-                    StartTime = DateTime.Now.ConvertToEuropeWarsaw(),
-                    Lampshade = lampshade,
-                    LampshadeNorm = lampshadeNorms,
-                    LampshadeDekor = position.Dekor,
-                    OrderPositionForProductionId = orderPositionForProduction?.Id,
-                    SubiektProductId = position.SubiektProductId,
-                };
-                applicationDbContext.DocumentPositions.Add(documentPosition);
-            }
-
-            applicationDbContext.SaveChanges();
-
-            transaction.Commit();
-            return document.Id;
+            return createProdOrder(productionOrder, orderForProduction, transaction);
         }
         catch
         {
@@ -681,8 +590,122 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         }
 
         document.StatusId = 6;
+        
+        foreach (var position in applicationDbContext.DocumentPositions
+            .Where(dp => dp.DocumentId == id))
+        {
+            position.IsDeleted = true;
+        }
+        
         applicationDbContext.SaveChanges();
 
         return 1;
+    }
+    
+    private int? createProdOrder(ProductionOrder productionOrder, OrderForProduction orderForProduction, IDbContextTransaction transaction)
+    {
+        try
+        {
+            var currentYear = DateTime.Now.ConvertToEuropeWarsaw().Year;
+            var docNumber = applicationDbContext.Documents
+                .Where(d => d.WarehouseId == Warehouses.PROD_ID
+                            && d.Year == currentYear
+                            && d.DocumentsDefinitionId == DocumentsDefinitions.ZP_ID)
+                .Select(d => d.DocNumber)
+                .ToList()
+                .DefaultIfEmpty(0)
+                .Max() + 1;
+
+            var document = new Document
+            {
+                DocNumber = docNumber,
+                WarehouseId = Warehouses.PROD_ID,
+                Year = currentYear,
+                Number = $"{Warehouses.PROD_CODE}/{docNumber:D4}/{DocumentsDefinitions.ZP_CODE}/{currentYear}",
+                DocumentsDefinitionId = DocumentsDefinitions.ZP_ID,
+                OperatorId = productionOrder.OperatorId,
+                CreatedAt = DateTime.Now.ConvertToEuropeWarsaw(),
+                UpdatedAt = DateTime.Now.ConvertToEuropeWarsaw(),
+                ClosedAt = null,
+                StatusId = 1,
+                Order = orderForProduction,
+            };
+                
+            applicationDbContext.Documents.Add(document);
+
+            foreach (var position in productionOrder.ProductionOrderPositions)
+            {
+                var lampshade = applicationDbContext.Lampshades
+                    .FirstOrDefault(l => l.Code == position.Symbol);
+                
+                if (lampshade == null)
+                {
+                    var code = Regex.Match(position.Symbol, @"^[A-Z]{2}\d{3,4}").Value;
+                    
+                    if (code == "")
+                    {
+                        transaction.Rollback();
+                        return null;
+                    }
+                    
+                    lampshade = new()
+                    {
+                        Code = code
+                    };
+                    applicationDbContext.Lampshades.Add(lampshade);
+                }
+                
+                var variant = applicationDbContext.LampshadeVariants
+                    .FirstOrDefault(l => l.Id == position.VariantId);
+
+                if (variant == null)
+                {
+                    transaction.Rollback();
+                    return null;
+                }
+                    
+                var lampshadeNorms = applicationDbContext.LampshadeNorms
+                    .FirstOrDefault(l => l.Lampshade == lampshade
+                                         && l.Variant == variant);
+                    
+                if (lampshadeNorms == null)
+                {
+                    lampshadeNorms = new()
+                    {
+                        Lampshade = lampshade,
+                        Variant = variant,
+                    };
+                    applicationDbContext.LampshadeNorms.Add(lampshadeNorms);
+                }
+                
+                var orderPositionForProduction = applicationDbContext.OrderPositionsForProduction
+                    .FirstOrDefault(op => op.SubiektId == position.DocumentPositionId);
+
+                var documentPosition = new DocumentPositions
+                {
+                    Document = document,
+                    QuantityNetto = position.Net,
+                    QuantityGross = position.Gross,
+                    OperatorId = productionOrder.OperatorId,
+                    StartTime = DateTime.Now.ConvertToEuropeWarsaw(),
+                    Lampshade = lampshade,
+                    LampshadeNorm = lampshadeNorms,
+                    LampshadeDekor = position.Dekor,
+                    OrderPositionForProductionId = orderPositionForProduction?.Id,
+                    SubiektProductId = position.SubiektProductId,
+                };
+                applicationDbContext.DocumentPositions.Add(documentPosition);
+            }
+
+            applicationDbContext.SaveChanges();
+
+            transaction.Commit();
+            return document.Id;
+        }
+        catch
+        {
+            transaction.Rollback();
+            return null;
+        }
     }
 }

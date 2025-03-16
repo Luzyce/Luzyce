@@ -18,6 +18,26 @@ public class ProdPrioritiesService(HttpClient httpClient, TokenValidationService
         
     }
     
+    public async Task<GetOrdersPositionsResponse?> GetDeletedPositions()
+    {
+        if (!await tokenValidationService.IsTokenValid())
+        {
+            return null;
+        }
+        return await httpClient.GetFromJsonAsync<GetOrdersPositionsResponse>("/api/productionPriority/getDeletedPositions");
+    }
+    
+    public async Task<bool> RestorePosition(int id)
+    {
+        if (!await tokenValidationService.IsTokenValid())
+        {
+            return false;
+        }
+        var response = await httpClient.GetAsync($"/api/productionPriority/restorePosition/{id}");
+        
+        return response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.Unauthorized && response.StatusCode != HttpStatusCode.Conflict;
+    }
+    
     public async Task<bool> SaveProductionPriority(UpdateProductionPrioritiesRequest request)
     {
         if (!await tokenValidationService.IsTokenValid())
