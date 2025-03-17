@@ -427,6 +427,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                 {
                     Order = orderForProduction,
                     OrderNumber = order.Number,
+                    SubiektId = position.Id,
                     Symbol = position.Symbol,
                     Product = lampshade,
                     Description = position.Description,
