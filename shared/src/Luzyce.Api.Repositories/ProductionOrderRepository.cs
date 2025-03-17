@@ -640,7 +640,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                 
                 if (lampshade == null)
                 {
-                    var code = Regex.Match(position.Symbol, @"^[A-Z]{2}\d{3,4}").Value;
+                    var code = Regex.Match(position.Symbol, @"^[A-ZĄĆĘŁŃÓŚŹŻ]{2}\d{3,4}").Value;
                     
                     if (code == "")
                     {
