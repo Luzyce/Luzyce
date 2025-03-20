@@ -92,7 +92,7 @@
                     @if (product.QuantityGross != 0)
                     {
                         var totalLossAndImprove = product.QuantityLoss + product.QuantityToImprove;
-                        var percentage = totalLossAndImprove / product.QuantityGross * 100;
+                        var percentage = totalLossAndImprove * 100.0 / product.QuantityGross;
                         <div>@percentage.ToString("F2")%</div>
                     }
                     else

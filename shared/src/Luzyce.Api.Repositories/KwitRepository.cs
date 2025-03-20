@@ -475,7 +475,7 @@ public class KwitRepository(ApplicationDbContext applicationDbContext)
         }
 
         var lack = applicationDbContext.KwitLacks
-            .FirstOrDefault(x => x.LackId == error.Id);
+            .FirstOrDefault(x => x.LackId == error.Id && x.KwitId == kwitId);
 
         if (lack == null)
         {
