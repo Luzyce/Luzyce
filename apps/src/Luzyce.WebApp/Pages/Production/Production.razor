@@ -63,6 +63,7 @@
             <th>Data</th>
             <th>Klient</th>
             <th>Zamówienie</th>
+            <th>Kwit</th>
             <th>Zmiana</th>
             <th>Zespół</th>
             <th>Hutnik</th>
@@ -82,6 +83,9 @@
                 <td>@product.Date.ToDateTime().ToString("dd.MM.yyyy")</td>
                 <td>@product.ClientName</td>
                 <td>@product.OrderNumber</td>
+                <td>
+                    <a type="button" class="btn btn-primary" href="/productionPlan/editKwit?dateString=@product.Date.ToDateTime().ToString("yyyy-MM-dd")&shift=@product.Shift&team=@product.Team&kwitId=@product.KwitId">@product.KwitNumber</a>
+                </td>
                 <td>@product.Shift</td>
                 <td>@product.Team</td>
                 <td>@product.HeadsOfMetallurgicalTeams</td>

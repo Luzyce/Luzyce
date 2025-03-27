@@ -51,13 +51,13 @@ public class ProductionController(ProductionRepository prodRepository, EventRepo
             worksheet.Cell("H" + (production.IndexOf(product) + 4)).Value = product.LampshadeVariant;
             worksheet.Cell("I" + (production.IndexOf(product) + 4)).Value = product.QuantityGross;
 
-            var percentage = 0;
+            double percentage = 0;
             if (product.QuantityGross != 0)
             {
                 var totalLossAndImprove = product.QuantityLoss + product.QuantityToImprove;
-                percentage = totalLossAndImprove / product.QuantityGross * 100;
+                percentage = (double)totalLossAndImprove / product.QuantityGross * 100;
             }
-            
+
             worksheet.Cell("J" + (production.IndexOf(product) + 4)).Value = percentage.ToString("F2") + "%";
             worksheet.Cell("K" + (production.IndexOf(product) + 4)).Value = product.QuantityNetto;
             worksheet.Cell("L" + (production.IndexOf(product) + 4)).Value = product.WeightGross;

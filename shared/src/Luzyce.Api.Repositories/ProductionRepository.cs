@@ -32,6 +32,8 @@ public class ProductionRepository(ApplicationDbContext applicationDbContext)
             .Include(document => document.ProductionPlanPositions)
             .ThenInclude(productionPlanPositions => productionPlanPositions!.ProductionPlan)
             .ThenInclude(productionPlan => productionPlan!.HeadsOfMetallurgicalTeams)
+            .Include(d => d.ProductionPlanPositions)
+            .ThenInclude(ppp => ppp!.Kwit)
             .ToList();
         
         var production = query
@@ -39,9 +41,11 @@ public class ProductionRepository(ApplicationDbContext applicationDbContext)
             .ThenByDescending(d => d.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftNumber)
             .ThenByDescending(d => d.ProductionPlanPositions?.ProductionPlan?.Team)
             .ThenByDescending(d => d.Id)
-            .Select(d => new GetProduct()
+            .Select(d => new GetProduct
             {
                 Id = d.Id,
+                KwitId = d.ProductionPlanPositions?.Kwit.First().Id ?? 0,
+                KwitNumber = d.ProductionPlanPositions?.Kwit.First().Number ?? string.Empty,
                 Date = d.ProductionPlanPositions?.ProductionPlan?.Date,
                 Shift = d.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftNumber ?? 0,
                 Team = d.ProductionPlanPositions?.ProductionPlan?.Team ?? 0,

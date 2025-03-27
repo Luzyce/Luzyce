@@ -54,9 +54,7 @@ public class ProductionReportController(ProductionReportRepository prRepo) : Con
                                            kwit.DocumentPositions.First().LampshadeNorm?.Variant?.Name;
             worksheet.Cell(7, row).Value = kwit.Number;
 
-            worksheet.Cell(8, row).Value = kwit.DocumentPositions.First().QuantityNetto +
-                                           kwit.DocumentPositions.First().QuantityGross +
-                                           kwit.DocumentPositions.First().QuantityLoss;
+            worksheet.Cell(8, row).Value = kwit.DocumentPositions.First().QuantityGross;
             worksheet.Cell(9, row).Value = kwit.DocumentPositions.First().QuantityNetto;
 
             for (var i = 1; i < lacks[kwits.IndexOf(kwit)].Count; i++)

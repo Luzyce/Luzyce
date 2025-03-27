@@ -4,6 +4,8 @@ public class GetProduct
 {
     public int Id { get; set; }
     public DateOnly? Date { get; set; }
+    public int KwitId { get; set; }
+    public string KwitNumber { get; set; } = string.Empty;
     public int Shift { get; set; }
     public int Team { get; set; }
     public string ClientName { get; set; } = string.Empty;
