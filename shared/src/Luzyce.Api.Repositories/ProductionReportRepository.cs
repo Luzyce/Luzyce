@@ -38,7 +38,7 @@ public class ProductionReportRepository(ApplicationDbContext applicationDbContex
             .ThenInclude(order => order!.Customer)
             .Include(d => d.ProductionPlanPositions)
             .ThenInclude(ppp => ppp!.DocumentPosition)
-            .ThenInclude(dp => dp!.LampshadeNorm)
+            .ThenInclude(dp => dp!.LampshadeNorm).Include(document => document.Lacks)
             .Where(x => x.DocumentsDefinitionId == DocumentsDefinitions.KW_ID &&
                         x.ProductionPlanPositions != null &&
                         x.ProductionPlanPositions.ProductionPlan != null &&
@@ -58,26 +58,22 @@ public class ProductionReportRepository(ApplicationDbContext applicationDbContex
         var kwitsLacks = new List<List<GetLacks>>();
         foreach (var kwit in kwits)
         {
-            var operationWithErrorsInKwit = applicationDbContext.Operations
-                .Include(x => x.ErrorCode)
-                .Where(x => x.DocumentId == kwit.Id &&
-                            x.QuantityLossDelta > 0 &&
-                            x.IsCancelled == false)
-                .ToList();
-
-            var lacks = new List<GetLacks>();
-            foreach (var error in allLacks)
+            var allErrorCodes = applicationDbContext.Errors.OrderBy(e => e.Id).ToList();
+        
+            var lacks = allErrorCodes.Select(errorCode =>
             {
-                var totalQuantity = operationWithErrorsInKwit
-                    .Where(op => op.ErrorCode?.Code == error.ErrorCode)
-                    .Sum(op => op.QuantityLossDelta);
-
-                lacks.Add(new GetLacks
+                var quantity = kwit.Lacks
+                    .Where(op => op.LackId == errorCode.Id)
+                    .Sum(op => op.Quantity);
+        
+                return new GetLacks
                 {
-                    ErrorName = error.ErrorName, ErrorCode = error.ErrorCode, Quantity = totalQuantity > 0 ? totalQuantity : null
-                });
-            }
-
+                    Quantity = quantity,
+                    ErrorName = errorCode.Name,
+                    ErrorCode = errorCode.Code
+                };
+            }).OrderBy(lack => lack.ErrorCode).ToList();
+            
             kwitsLacks.Add(lacks);
         }
 
