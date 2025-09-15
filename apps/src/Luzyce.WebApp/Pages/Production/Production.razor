@@ -155,7 +155,12 @@
 </div>
 
 <div class="container mt-4">
-    <button class="btn btn-primary" @onclick="PrintProduction">Wydrukuj</button>
+    <button class="btn btn-primary @(string.IsNullOrEmpty(SearchTerm) ? "" : "disabled")" 
+            @onclick="PrintProduction"
+            disabled="@(!string.IsNullOrEmpty(SearchTerm))"
+            style="@(string.IsNullOrEmpty(SearchTerm) ? "" : "pointer-events: none; opacity: 0.5;")">
+        Wydrukuj
+    </button>
 </div>
 
 @code
