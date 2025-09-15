@@ -7,6 +7,7 @@
 @inject ProductionService ProductionService
 @inject IConfiguration Configuration
 @inject IJSRuntime Js
+@implements IDisposable
 
 @if (Month == null)
 {
@@ -39,14 +40,27 @@
 }
 
 <div class="d-flex justify-content-between mb-3">
-    <span class="btn" @onclick="PreviousMonth">
+    <span class="btn @(string.IsNullOrEmpty(SearchTerm) ? "" : "disabled")" 
+          @onclick="PreviousMonth" 
+          disabled="@(!string.IsNullOrEmpty(SearchTerm))" 
+          style="@(string.IsNullOrEmpty(SearchTerm) ? "" : "pointer-events: none; opacity: 0.5;")">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-left" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M8.354 1.646a.5.5 0 0 1 0 .708L2.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
             <path fill-rule="evenodd" d="M12.354 1.646a.5.5 0 0 1 0 .708L6.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0"/>
         </svg>
     </span>
-    <h3>@Month.ToDateTime().ToString("MMMM yyyy", new CultureInfo("pl-PL"))</h3>
-    <span class="btn" @onclick="NextMonth">
+    @if (string.IsNullOrEmpty(SearchTerm))
+    {
+        <h3>@Month.ToDateTime().ToString("MMMM yyyy", new CultureInfo("pl-PL"))</h3>
+    }
+    else
+    {
+        <h3>Przeszukiwanie całej bazy</h3>
+    }
+    <span class="btn @(string.IsNullOrEmpty(SearchTerm) ? "" : "disabled")" 
+          @onclick="NextMonth" 
+          disabled="@(!string.IsNullOrEmpty(SearchTerm))"
+          style="@(string.IsNullOrEmpty(SearchTerm) ? "" : "pointer-events: none; opacity: 0.5;")">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-double-right" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M3.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L9.293 8 3.646 2.354a.5.5 0 0 1 0-.708"/>
             <path fill-rule="evenodd" d="M7.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L13.293 8 7.646 2.354a.5.5 0 0 1 0-.708"/>
@@ -55,8 +69,35 @@
 </div>
 
 
+
 <div class="container mt-4">
     <h1>Produkcja</h1>
+    
+    <!-- Search Bar -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Szukaj w całej bazie danych..." 
+                       @bind="SearchTerm" @oninput="OnSearchInput" />
+                <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x" viewBox="0 0 16 16">
+                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                </button>
+                <button class="btn btn-primary" type="button" @onclick="PerformSearch">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0"/>
+                    </svg>
+                    Szukaj
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(SearchTerm))
+            {
+                <small class="text-muted">Wyszukiwanie: "@SearchTerm" - znaleziono @(Products?.Count ?? 0) wyników</small>
+            }
+        </div>
+    </div>
+
     <table class="table">
         <thead>
         <tr>
@@ -125,6 +166,8 @@
     private DateOnly? Month { get; set; }
     private DateTime SelectedMonth { get; set; } = DateTime.Now;
     private List<GetProduct>? Products { get; set; } = new();
+    private string SearchTerm { get; set; } = string.Empty;
+    private Timer? _searchTimer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -134,7 +177,8 @@
 
             Products = await ProductionService.GetProductsAsync(new GetProductionDto
             {
-                SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1)
+                SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
+                SearchTerm = string.Empty
             });
 
         }
@@ -145,26 +189,75 @@
         Month = new DateOnly(SelectedMonth.Year, SelectedMonth.Month, 1);
         Products = await ProductionService.GetProductsAsync(new GetProductionDto
         {
-            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1)
+            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
+            SearchTerm = SearchTerm
         });
     }
     
     private async Task PreviousMonth()
     {
+        if (!string.IsNullOrEmpty(SearchTerm)) return; // Don't allow month navigation while searching
+        
         Month = Month.AddMonths(-1);
         Products = await ProductionService.GetProductsAsync(new GetProductionDto
         {
-            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1)
+            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
+            SearchTerm = SearchTerm
         });
     }
 
     private async Task NextMonth()
     {
+        if (!string.IsNullOrEmpty(SearchTerm)) return; // Don't allow month navigation while searching
+        
         Month = Month.AddMonths(1);
         Products = await ProductionService.GetProductsAsync(new GetProductionDto
         {
-            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1)
+            SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
+            SearchTerm = SearchTerm
         });
+    }
+
+    private async Task PerformSearch()
+    {
+        Products = await ProductionService.SearchProductsAsync(SearchTerm, Month);
+        StateHasChanged();
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        SearchTerm = e.Value?.ToString() ?? string.Empty;
+        
+        // Cancel previous timer
+        _searchTimer?.Dispose();
+        
+        // Set up new timer for debounced search (500ms delay)
+        _searchTimer = new Timer(async _ => await InvokeAsync(async () =>
+        {
+            await PerformSearch();
+        }), null, 500, Timeout.Infinite);
+    }
+
+    private async Task ClearSearch()
+    {
+        SearchTerm = string.Empty;
+        _searchTimer?.Dispose();
+        
+        if (Month != null)
+        {
+            // If a month is selected, show that month's data
+            Products = await ProductionService.GetProductsAsync(new GetProductionDto
+            {
+                SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
+                SearchTerm = string.Empty
+            });
+        }
+        else
+        {
+            // If no month is selected, clear the products
+            Products = new List<GetProduct>();
+        }
+        StateHasChanged();
     }
 
     private async Task PrintProduction()
@@ -178,5 +271,10 @@
         
         var url = Configuration["apiUrl"] + $"/api/production/downloadExcel/{selectedDate}?timestamp=1";
         await Js.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    public void Dispose()
+    {
+        _searchTimer?.Dispose();
     }
 }
