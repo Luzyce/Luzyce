@@ -15,8 +15,6 @@ public class ProductionRepository(ApplicationDbContext applicationDbContext)
                         d.ProductionPlanPositions != null && 
                         d.ProductionPlanPositions.ProductionPlan != null);
 
-        // If no search term is provided, filter by month (original behavior)
-        // If search term is provided, search across all data regardless of month
         if (string.IsNullOrEmpty(productionFilter?.SearchTerm))
         {
             query = query.Where(d => d.ProductionPlanPositions.ProductionPlan.Date.Month == productionFilter!.SelectedMonth.Month);
@@ -72,7 +70,6 @@ public class ProductionRepository(ApplicationDbContext applicationDbContext)
             })
             .ToList();
 
-        // Apply search filter if search term is provided
         if (!string.IsNullOrEmpty(productionFilter?.SearchTerm))
         {
             var searchTerm = productionFilter.SearchTerm.ToLower();
