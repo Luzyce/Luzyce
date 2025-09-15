@@ -201,8 +201,6 @@
     
     private async Task PreviousMonth()
     {
-        if (!string.IsNullOrEmpty(SearchTerm)) return; // Don't allow month navigation while searching
-        
         Month = Month.AddMonths(-1);
         Products = await ProductionService.GetProductsAsync(new GetProductionDto
         {
@@ -213,8 +211,6 @@
 
     private async Task NextMonth()
     {
-        if (!string.IsNullOrEmpty(SearchTerm)) return; // Don't allow month navigation while searching
-        
         Month = Month.AddMonths(1);
         Products = await ProductionService.GetProductsAsync(new GetProductionDto
         {
@@ -232,11 +228,9 @@
     private async Task OnSearchInput(ChangeEventArgs e)
     {
         SearchTerm = e.Value?.ToString() ?? string.Empty;
-        
-        // Cancel previous timer
+
         _searchTimer?.Dispose();
-        
-        // Set up new timer for debounced search (500ms delay)
+
         _searchTimer = new Timer(async _ => await InvokeAsync(async () =>
         {
             await PerformSearch();
@@ -250,7 +244,6 @@
         
         if (Month != null)
         {
-            // If a month is selected, show that month's data
             Products = await ProductionService.GetProductsAsync(new GetProductionDto
             {
                 SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
@@ -259,7 +252,6 @@
         }
         else
         {
-            // If no month is selected, clear the products
             Products = new List<GetProduct>();
         }
         StateHasChanged();
