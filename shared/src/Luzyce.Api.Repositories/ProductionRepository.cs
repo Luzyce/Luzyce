@@ -13,8 +13,14 @@ public class ProductionRepository(ApplicationDbContext applicationDbContext)
             .Where(d => d.DocumentsDefinition != null && 
                         d.DocumentsDefinition.Code == DocumentsDefinitions.KW_CODE && 
                         d.ProductionPlanPositions != null && 
-                        d.ProductionPlanPositions.ProductionPlan != null && 
-                        d.ProductionPlanPositions.ProductionPlan.Date.Month == productionFilter!.SelectedMonth.Month)
+                        d.ProductionPlanPositions.ProductionPlan != null);
+
+        if (string.IsNullOrEmpty(productionFilter?.SearchTerm))
+        {
+            query = query.Where(d => d.ProductionPlanPositions.ProductionPlan.Date.Month == productionFilter!.SelectedMonth.Month);
+        }
+
+        var finalQuery = query
             .Include(d => d.ProductionPlanPositions)
             .ThenInclude(ppp => ppp!.ProductionPlan)
             .ThenInclude(pp => pp!.Shift)
@@ -36,7 +42,7 @@ public class ProductionRepository(ApplicationDbContext applicationDbContext)
             .ThenInclude(ppp => ppp!.Kwit)
             .ToList();
         
-        var production = query
+        var production = finalQuery
             .OrderByDescending(d => d.ProductionPlanPositions?.ProductionPlan?.Date)
             .ThenByDescending(d => d.ProductionPlanPositions?.ProductionPlan?.Shift?.ShiftNumber)
             .ThenByDescending(d => d.ProductionPlanPositions?.ProductionPlan?.Team)
@@ -63,6 +69,26 @@ public class ProductionRepository(ApplicationDbContext applicationDbContext)
                 WeightNetto = d.DocumentPositions.First().LampshadeNorm?.WeightNetto
             })
             .ToList();
+
+        if (!string.IsNullOrEmpty(productionFilter?.SearchTerm))
+        {
+            var searchTerm = productionFilter.SearchTerm.ToLower();
+            production = production.Where(p => 
+                (p.Date?.ToString("dd.MM.yyyy") ?? string.Empty).ToLower().Contains(searchTerm) ||
+                p.ClientName.ToLower().Contains(searchTerm) ||
+                p.OrderNumber.ToLower().Contains(searchTerm) ||
+                p.KwitNumber.ToLower().Contains(searchTerm) ||
+                p.Shift.ToString().Contains(searchTerm) ||
+                p.Team.ToString().Contains(searchTerm) ||
+                p.HeadsOfMetallurgicalTeams.ToLower().Contains(searchTerm) ||
+                p.Lampshade.ToLower().Contains(searchTerm) ||
+                p.LampshadeVariant.ToLower().Contains(searchTerm) ||
+                p.QuantityGross.ToString().Contains(searchTerm) ||
+                p.QuantityNetto.ToString().Contains(searchTerm) ||
+                (p.WeightGross?.ToString() ?? string.Empty).Contains(searchTerm) ||
+                (p.WeightNetto?.ToString() ?? string.Empty).Contains(searchTerm)
+            ).ToList();
+        }
         
         return production;
     }
