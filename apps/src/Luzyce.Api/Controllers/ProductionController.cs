@@ -19,6 +19,65 @@ public class ProductionController(ProductionRepository prodRepository, EventRepo
         return Ok(prodRepository.GetProduction(getProductionDto));
     }
     
+    [HttpPost("downloadExcel")]
+    public IActionResult DownloadExcelFiltered(GetProductionDto getProductionDto)
+    {
+        eventRepository.AddLog(User, "Pobrano produkcje w formacie Excel (filtrowane)", JsonSerializer.Serialize(new {getProductionDto}));
+        var production = prodRepository.GetProduction(getProductionDto);
+        
+        var templatePath = Path.Combine("Resources", "production-template.xlsx");
+        
+        if (!System.IO.File.Exists(templatePath))
+        {
+            return NotFound("Template file not found.");
+        }
+        
+        using var workbook = new XLWorkbook(templatePath);
+        var worksheet = workbook.Worksheet(1);
+        
+        // Set appropriate date in the header based on search or month
+        var headerDate = string.IsNullOrEmpty(getProductionDto.SearchTerm) 
+            ? getProductionDto.SelectedMonth.ToString("MM.yyyy")
+            : "Wyszukiwanie";
+        
+        worksheet.Cell("M1").Value = headerDate;
+
+        foreach (var product in production)
+        {
+            worksheet.Cell("A" + (production.IndexOf(product) + 4)).Value = product.Date?.ToString("dd.MM.yyyy");
+            worksheet.Cell("B" + (production.IndexOf(product) + 4)).Value = product.ClientName;
+            worksheet.Cell("C" + (production.IndexOf(product) + 4)).Value = product.OrderNumber;
+            worksheet.Cell("D" + (production.IndexOf(product) + 4)).Value = product.Shift;
+            worksheet.Cell("E" + (production.IndexOf(product) + 4)).Value = product.Team;
+            worksheet.Cell("F" + (production.IndexOf(product) + 4)).Value = product.HeadsOfMetallurgicalTeams;
+            worksheet.Cell("G" + (production.IndexOf(product) + 4)).Value = product.Lampshade;
+            worksheet.Cell("H" + (production.IndexOf(product) + 4)).Value = product.LampshadeVariant;
+            worksheet.Cell("I" + (production.IndexOf(product) + 4)).Value = product.QuantityGross;
+
+            double percentage = 0;
+            if (product.QuantityGross != 0)
+            {
+                var totalLossAndImprove = product.QuantityLoss + product.QuantityToImprove;
+                percentage = (double)totalLossAndImprove / product.QuantityGross * 100;
+            }
+
+            worksheet.Cell("J" + (production.IndexOf(product) + 4)).Value = percentage.ToString("F2") + "%";
+            worksheet.Cell("K" + (production.IndexOf(product) + 4)).Value = product.QuantityNetto;
+            worksheet.Cell("L" + (production.IndexOf(product) + 4)).Value = product.WeightGross;
+            worksheet.Cell("M" + (production.IndexOf(product) + 4)).Value = product.WeightNetto;
+        }
+        
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        var fileContent = stream.ToArray();
+        
+        var fileName = string.IsNullOrEmpty(getProductionDto.SearchTerm) 
+            ? $"Produkcja {getProductionDto.SelectedMonth:yyMM}.xlsx"
+            : $"Produkcja Wyszukiwanie {DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+        
+        return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+    }
+    
     [HttpGet("downloadExcel/{dateStr}")]
     public IActionResult DownloadExcel(string dateStr)
     {

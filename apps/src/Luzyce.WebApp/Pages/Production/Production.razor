@@ -9,19 +9,7 @@
 @inject IJSRuntime Js
 @implements IDisposable
 
-@if (Month == null)
-{
-    <div class="container mt-4">
-        <div class="form-group">
-            <label for="monthPicker" class="form-label">Wybierz miesiąc:</label>
-            <div class="input-group">
-                <input type="month" id="monthPicker" class="form-control" @bind="SelectedMonth"/>
-                <button class="btn btn-primary" @onclick="SetMonth">Wybierz</button>
-            </div>
-        </div>
-    </div>
-    return;
-}
+
 
 @if (Products == null)
 {
@@ -155,10 +143,7 @@
 </div>
 
 <div class="container mt-4">
-    <button class="btn btn-primary @(string.IsNullOrEmpty(SearchTerm) ? "" : "disabled")" 
-            @onclick="PrintProduction"
-            disabled="@(!string.IsNullOrEmpty(SearchTerm))"
-            style="@(string.IsNullOrEmpty(SearchTerm) ? "" : "pointer-events: none; opacity: 0.5;")">
+    <button class="btn btn-primary" @onclick="PrintProduction">
         Wydrukuj
     </button>
 </div>
@@ -185,7 +170,16 @@
                 SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
                 SearchTerm = string.Empty
             });
-
+        }
+        else
+        {
+            // Set default month to current month to allow immediate data loading
+            Month = new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1);
+            Products = await ProductionService.GetProductsAsync(new GetProductionDto
+            {
+                SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
+                SearchTerm = string.Empty
+            });
         }
     }
 
@@ -264,10 +258,29 @@
             return;
         }
         
-        var selectedDate = Month.ToDateTime().ToString("yyyy-MM-dd");
-        
-        var url = Configuration["apiUrl"] + $"/api/production/downloadExcel/{selectedDate}?timestamp=1";
-        await Js.InvokeVoidAsync("open", url, "_blank");
+        // If there's a search term, use the new filtered export
+        if (!string.IsNullOrEmpty(SearchTerm))
+        {
+            var exportDto = new GetProductionDto
+            {
+                SelectedMonth = Month ?? new DateOnly(DateTime.Now.Year, DateTime.Now.Month, 1),
+                SearchTerm = SearchTerm
+            };
+            
+            var fileContent = await ProductionService.ExportProductsAsync(exportDto);
+            if (fileContent != null)
+            {
+                var fileName = $"Produkcja_Wyszukiwanie_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                await Js.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(fileContent));
+            }
+        }
+        else
+        {
+            // Use the original method for month-based export
+            var selectedDate = Month.ToDateTime().ToString("yyyy-MM-dd");
+            var url = Configuration["apiUrl"] + $"/api/production/downloadExcel/{selectedDate}?timestamp=1";
+            await Js.InvokeVoidAsync("open", url, "_blank");
+        }
     }
 
     public void Dispose()
