@@ -32,4 +32,21 @@ public class ProductionService(HttpClient httpClient, TokenValidationService tok
 
         return await GetProductsAsync(searchDto);
     }
+
+    public async Task<byte[]?> ExportProductsAsync(GetProductionDto getProductionDto)
+    {
+        if (!await tokenValidationService.IsTokenValid())
+        {
+            return null;
+        }   
+
+        var response = await httpClient.PostAsJsonAsync("/api/production/downloadExcel", getProductionDto);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadAsByteArrayAsync();
+        }
+
+        return null;
+    }
 }
