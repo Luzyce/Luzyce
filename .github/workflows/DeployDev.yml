@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: [self-hosted, staging-runner]
+    runs-on: [self-hosted, stagingenv]
     environment: Develop
 
     steps:
