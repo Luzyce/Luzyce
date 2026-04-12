@@ -1,0 +1,38 @@
+name: Build and Deploy - Development
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, staging-runner]
+    environment: Develop
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
+
+      - name: Build and deploy with docker-compose
+        env:
+          APP_DB_CONNECTION: ${{ secrets.CONNECTION_STRING_APP_DB }}
+          SUBIEKT_CONNECTION: ${{ secrets.CONNECTION_STRING_SUBIEKT }}
+          JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+          PUBLIC_URL: ${{ secrets.PUBLIC_URL }}
+        run: |
+          docker compose -f docker-compose.dev.yml down --rmi local || true
+          docker compose -f docker-compose.dev.yml build --no-cache
+          docker compose -f docker-compose.dev.yml up -d
+
+      - name: Health check
+        run: |
+          sleep 10
+          docker compose -f docker-compose.dev.yml ps
+          docker compose -f docker-compose.dev.yml logs --tail=30

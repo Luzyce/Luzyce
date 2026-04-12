@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/src/Luzyce.Api/Dockerfile
+    container_name: luzyce-dev-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=8080
+      - ConnectionStrings__AppDbConnection=${APP_DB_CONNECTION}
+      - ConnectionStrings__SubiektConnection=${SUBIEKT_CONNECTION}
+      - Jwt__SigningKey=${JWT_SIGNING_KEY}
+    restart: always
+
+  webapp:
+    build:
+      context: .
+      dockerfile: apps/src/Luzyce.WebApp/Dockerfile
+      args:
+        NGINX_CONF: apps/src/Luzyce.WebApp/nginx.dev.conf
+    container_name: luzyce-dev-webapp
+    environment:
+      - PUBLIC_URL=${PUBLIC_URL:-https://staging-phs.cloudsolutions.ovh/}
+    volumes:
+      - ./scripts/webapp-entrypoint.sh:/docker-entrypoint.sh:ro
+    entrypoint: ["/docker-entrypoint.sh"]
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: luzyce-dev-nginx
+    ports:
+      - "30001:30001"
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - webapp
+    restart: always
