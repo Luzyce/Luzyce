@@ -18,7 +18,7 @@ jobs:
 
       - name: Log in to GitHub Container Registry
         run: |
-          docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
+          sudo docker login --username ddnowicki --password ${{ secrets.GH_PAT }} ghcr.io
 
       - name: Build and deploy with docker-compose
         env:
@@ -27,12 +27,12 @@ jobs:
           JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
           PUBLIC_URL: ${{ secrets.PUBLIC_URL }}
         run: |
-          docker compose -f docker-compose.dev.yml down --rmi local || true
-          docker compose -f docker-compose.dev.yml build --no-cache
-          docker compose -f docker-compose.dev.yml up -d
+          sudo -E docker compose -f docker-compose.dev.yml down --rmi local || true
+          sudo -E docker compose -f docker-compose.dev.yml build --no-cache
+          sudo -E docker compose -f docker-compose.dev.yml up -d
 
       - name: Health check
         run: |
           sleep 10
-          docker compose -f docker-compose.dev.yml ps
-          docker compose -f docker-compose.dev.yml logs --tail=30
+          sudo docker compose -f docker-compose.dev.yml ps
+          sudo docker compose -f docker-compose.dev.yml logs --tail=30
