@@ -75,6 +75,23 @@ public class ProductionOrderService(HttpClient httpClient, TokenValidationServic
         return null;
     }
 
+    public async Task<GetProductDefaultsResponse?> GetProductDefaultsAsync(GetProductDefaults request)
+    {
+        if (!await tokenValidationService.IsTokenValid())
+        {
+            return null;
+        }
+
+        var response = await httpClient.PostAsJsonAsync("/api/productionOrder/getProductDefaults", request);
+
+        if (response.IsSuccessStatusCode)
+        {
+            return await response.Content.ReadFromJsonAsync<GetProductDefaultsResponse>();
+        }
+
+        return null;
+    }
+
     public async Task<bool> ArchiveProductionOrder(int id)
     {
         if (!await tokenValidationService.IsTokenValid())

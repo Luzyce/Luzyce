@@ -450,6 +450,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         catch
         {
             transaction.Rollback();
+            applicationDbContext.ChangeTracker.Clear();
             return null;
         }
     }
@@ -473,6 +474,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                 if (existingPosition?.LampshadeNorm == null)
                 {
                     transaction.Rollback();
+                    applicationDbContext.ChangeTracker.Clear();
                     return 0;
                 }
 
@@ -543,6 +545,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         catch
         {
             transaction.Rollback();
+            applicationDbContext.ChangeTracker.Clear();
             return 0;
         }
     }
@@ -641,17 +644,9 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                 
                 if (lampshade == null)
                 {
-                    var code = Regex.Match(position.Symbol, @"^[A-ZĄĆĘŁŃÓŚŹŻ]{2}\d{3,4}").Value;
-                    
-                    if (code == "")
-                    {
-                        transaction.Rollback();
-                        return null;
-                    }
-                    
                     lampshade = new()
                     {
-                        Code = code
+                        Code = position.Symbol.Trim()
                     };
                     applicationDbContext.Lampshades.Add(lampshade);
                 }
@@ -662,6 +657,7 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
                 if (variant == null)
                 {
                     transaction.Rollback();
+                    applicationDbContext.ChangeTracker.Clear();
                     return null;
                 }
                     
@@ -706,7 +702,37 @@ public class ProductionOrderRepository(ApplicationDbContext applicationDbContext
         catch
         {
             transaction.Rollback();
+            applicationDbContext.ChangeTracker.Clear();
             return null;
         }
+    }
+
+    public GetProductDefaultsResponse GetProductDefaults(GetProductDefaults request)
+    {
+        var response = new GetProductDefaultsResponse();
+
+        foreach (var subiektProductId in request.SubiektProductIds)
+        {
+            var lastPosition = applicationDbContext.DocumentPositions
+                .Include(dp => dp.Lampshade)
+                .Include(dp => dp.LampshadeNorm)
+                .Where(dp => dp.SubiektProductId == subiektProductId && !dp.IsDeleted)
+                .OrderByDescending(dp => dp.Id)
+                .FirstOrDefault();
+
+            if (lastPosition?.Lampshade == null)
+            {
+                continue;
+            }
+
+            response.Defaults[subiektProductId] = new ProductDefaultValues
+            {
+                LampshadeCode = lastPosition.Lampshade.Code,
+                VariantId = lastPosition.LampshadeNorm?.VariantId ?? 0,
+                Dekor = lastPosition.LampshadeDekor
+            };
+        }
+
+        return response;
     }
 }
