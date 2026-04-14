@@ -91,6 +91,13 @@ public class ProductionOrderController(ProductionOrderRepository productionOrder
         return Ok();
     }
     
+    [HttpPost("getProductDefaults")]
+    [Authorize]
+    public IActionResult GetProductDefaults(GetProductDefaults request)
+    {
+        return Ok(productionOrderRepository.GetProductDefaults(request));
+    }
+
     [HttpPost("getNorms")]
     [Authorize]
     public IActionResult GetNorms(GetNorms getNorms)

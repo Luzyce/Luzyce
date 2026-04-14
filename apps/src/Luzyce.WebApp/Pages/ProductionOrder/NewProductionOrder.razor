@@ -144,19 +144,20 @@
                             <td></td>
                         }
                         <td>
-                            <div class="input-group mb-3">
-                                <input type="number" class="form-control narrow-input" min="0"
-                                       data-position-id="@position.Id"
-                                       @oninput="(e) => OnQuantityInput(position.Id, e)"/>
-
-                                <div class="input-group-append">
+                            <div class="prod-quantity-cell">
+                                <div class="input-group input-group-sm prod-quantity-group">
+                                    <input type="number" class="form-control" min="0"
+                                           data-position-id="@position.Id"
+                                           @oninput="(e) => OnQuantityInput(position.Id, e)"/>
                                     <button class="btn btn-outline-secondary" type="button" @onclick="() => CalculateProductionOrderQuantity(position)">Wylicz</button>
                                 </div>
                                 @if (norms.ContainsKey(position.Id) && norms[position.Id] == 0)
                                 {
-                                    <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='red' class='bi bi-exclamation-triangle-fill ml-2' viewBox='0 0 16 16'>
-                                        <path d='M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2'/>
-                                    </svg>
+                                    <span class="prod-warning-icon" title="Brak normy dla tej pozycji">
+                                        <svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='currentColor' viewBox='0 0 16 16'>
+                                            <path d='M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2'/>
+                                        </svg>
+                                    </span>
                                 }
                             </div>
                         </td>
@@ -233,12 +234,29 @@
             dekors.Clear();
             norms.Clear();
             
+            var productIds = selectedOrder.Positions
+                .Select(p => p.ProductId)
+                .Distinct()
+                .ToList();
+            var defaults = await ProductionOrderService.GetProductDefaultsAsync(
+                new GetProductDefaults { SubiektProductIds = productIds });
+
             foreach (var position in selectedOrder.Positions)
             {
-                var (lampshade, lastMatchingVariantId, dekor) = GetMatchingVariantInfo(position.Symbol);
-                lampshades.Add(position.Id, lampshade);
-                variantIds.Add(position.Id, lastMatchingVariantId ?? 0);
-                dekors.Add(position.Id, dekor);
+                if (defaults?.Defaults.TryGetValue(position.ProductId, out var saved) == true
+                    && !string.IsNullOrEmpty(saved.LampshadeCode))
+                {
+                    lampshades.Add(position.Id, saved.LampshadeCode);
+                    variantIds.Add(position.Id, saved.VariantId);
+                    dekors.Add(position.Id, saved.Dekor);
+                }
+                else
+                {
+                    var (lampshade, lastMatchingVariantId, dekor) = GetMatchingVariantInfo(position.Symbol);
+                    lampshades.Add(position.Id, lampshade);
+                    variantIds.Add(position.Id, lastMatchingVariantId ?? 0);
+                    dekors.Add(position.Id, dekor);
+                }
             }
             
             await LoadWarehouseQuantities(selectedOrder);

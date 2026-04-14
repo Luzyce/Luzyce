@@ -26,6 +26,30 @@
     width: 85px;
 }
 
+.prod-quantity-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.prod-quantity-group {
+    width: auto;
+    flex-wrap: nowrap;
+}
+
+.prod-quantity-group .form-control {
+    width: 70px;
+    flex: 0 0 auto;
+}
+
+.prod-warning-icon {
+    color: #dc3545;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
 .btn-right {
     float: right;
 }

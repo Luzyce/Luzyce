@@ -19,7 +19,6 @@ var logger = LoggerFactory.Create(config =>
 }).CreateLogger("Program");
 
 logger.LogInformation("Starting application");
-logger.LogInformation("Signing key: {jwtkey}", jwtkey);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

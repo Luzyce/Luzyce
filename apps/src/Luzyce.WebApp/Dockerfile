@@ -21,8 +21,10 @@ RUN dotnet publish "./Luzyce.WebApp.csproj" -c $BUILD_CONFIGURATION -o /app/publ
 FROM nginx:alpine as final
 WORKDIR /var/www/html
 
+ARG NGINX_CONF=apps/src/Luzyce.WebApp/nginx.conf
+
 COPY --from=publish /app/publish/wwwroot .
 
-COPY apps/src/Luzyce.WebApp/nginx.conf /etc/nginx/nginx.conf
+COPY ${NGINX_CONF} /etc/nginx/nginx.conf
 
 
